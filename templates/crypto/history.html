@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="history-page">
+    <!-- Animated background effects -->
+    <div class="history-particles"></div>
+    <div class="history-grid"></div>
+
+    <div class="history-wrapper">
+        <!-- Header section -->
+        <div class="page-header" data-animate="fade-down">
+            <div class="header-icon-group">
+                <div class="header-icon">
+                    <span class="icon-clock">🕒</span>
+                </div>
+                <div class="icon-ring"></div>
+            </div>
+            <h1 class="page-title">
+                <span class="title-word">Activity</span>
+                <span class="title-word accent">History</span>
+            </h1>
+            <p class="page-subtitle">Track your recent encryption and decryption operations</p>
+        </div>
+
+        <!-- History Content -->
+        <div class="history-card" data-animate="fade-up">
+            <div class="card-shine"></div>
+
+            <div class="card-header">
+                <h2>Recent Activity</h2>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div class="header-badge">
+                        <span class="badge-dot"></span>
+                        <span class="badge-text" id="logCount">{{ logs|length }} Events</span>
+                    </div>
+                    {% if logs %}
+                    <a href="{{ url_for('crypto.export_history') }}" class="btn-primary" style="padding: 8px 16px; font-size: 0.9rem;" title="Download Activity History as PDF">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if logs %}
+            <div class="table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>File Name</th>
+                            <th>Algorithm</th>
+                            <th>Date & Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log, filename in logs %}
+                        <tr class="log-row">
+                            <td>
+                                {% if log.action == 'ENCRYPT' %}
+                                <div class="action-badge encrypt-badge">
+                                    <span class="action-icon">🔒</span>
+                                    <span>Encrypted</span>
+                                </div>
+                                {% elif log.action == 'DECRYPT' %}
+                                <div class="action-badge decrypt-badge">
+                                    <span class="action-icon">🔓</span>
+                                    <span>Decrypted</span>
+                                </div>
+                                {% else %}
+                                <div class="action-badge neutral-badge">
+                                    <span class="action-icon">⚡</span>
+                                    <span>{{ log.action }}</span>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="file-name" title="{{ filename or 'Unknown File (Deleted)' }}">
+                                    {{ (filename or 'Unknown File (Deleted)')|truncate(35) }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="algorithm-chip">
+                                    {{ log.algorithm_used or 'Unknown' }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="timestamp">
+                                    <div class="time-date">{{ log.timestamp.strftime('%b %d, %Y') }}</div>
+                                    <div class="time-time">{{ log.timestamp.strftime('%H:%M:%S') }} UTC</div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📝</div>
+                <div class="empty-text">No activity yet</div>
+                <div class="empty-hint">Your encryption and decryption events will appear here</div>
+                <a href="{{ url_for('crypto.upload') }}" class="btn-primary mt-4">Encrypt a file</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom properties */
+    .history-page {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-glow: rgba(99, 102, 241, 0.3);
+        --success: #10b981;
+        --warning: #f59e0b;
+        --surface: var(--bg-secondary);
+        --text: var(--text-primary);
+        --text-secondary: var(--text-secondary);
+        --border: var(--border-color);
+
+        min-height: calc(100vh - 80px);
+        padding: 40px 24px;
+        position: relative;
+        overflow-x: hidden;
+    }
+
+    /* Animated background */
+    .history-particles {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+            radial-gradient(circle at 10% 40%, var(--primary-glow) 0%, transparent 30%),
+            radial-gradient(circle at 90% 60%, rgba(16, 185, 129, 0.15) 0%, transparent 30%);
+        opacity: 0.4;
+        animation: particlesFloat 20s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    @keyframes particlesFloat {
+
+        0%,
+        100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 0.4;
+        }
+
+        50% {
+            transform: scale(1.1) rotate(180deg);
+            opacity: 0.6;
+        }
+    }
+
+    .history-wrapper {
+        max-width: 1000px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 10;
+    }
+
+    /* Page header */
+    .page-header {
+        text-align: center;
+        margin-bottom: 48px;
+    }
+
+    .header-icon-group {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 24px;
+    }
+
+    .header-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        position: relative;
+        z-index: 2;
+        animation: iconPulse 2s ease-in-out infinite;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: 50%;
+        width: 80px;
+        height: 80px;
+    }
+
+    @keyframes iconPulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        50% {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px var(--primary-glow);
+        }
+    }
+
+    .icon-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100px;
+        height: 100px;
+        border: 2px solid var(--primary);
+        border-radius: 50%;
+        animation: ringPulse 2s ease-out infinite;
+    }
+
+    @keyframes ringPulse {
+        0% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.8;
+        }
+
+        100% {
+            transform: translate(-50%, -50%) scale(1.5);
+            opacity: 0;
+        }
+    }
+
+    .page-title {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .title-word {
+        animation: slideDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+    }
+
+    .title-word:nth-child(1) {
+        animation-delay: 0.1s;
+    }
+
+    .title-word:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    @keyframes slideDown {
+        0% {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .title-word.accent {
+        background: linear-gradient(135deg, var(--primary), #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        animation: fadeIn 0.6s ease 0.4s backwards;
+    }
+
+    /* Main card */
+    .history-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 32px;
+        margin-bottom: 32px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
+        animation: cardAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes cardAppear {
+        0% {
+            opacity: 0;
+            transform: scale(0.98) translateY(20px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .card-shine {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        animation: shine 3s linear infinite;
+    }
+
+    @keyframes shine {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .card-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .header-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 20px;
+        font-size: 0.85rem;
+        color: var(--primary);
+    }
+
+    .badge-dot {
+        width: 6px;
+        height: 6px;
+        background: var(--primary);
+        border-radius: 50%;
+        animation: dotPulse 2s infinite;
+    }
+
+    @keyframes dotPulse {
+
+        0%,
+        100% {
+            opacity: 0.5;
+        }
+
+        50% {
+            opacity: 1;
+        }
+    }
+
+    /* Table Styles */
+    .table-container {
+        overflow-x: auto;
+        border-radius: 12px;
+    }
+
+    .history-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        text-align: left;
+    }
+
+    .history-table th {
+        padding: 16px;
+        background: rgba(0, 0, 0, 0.2);
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .history-table td {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+        transition: background 0.2s;
+    }
+
+    .log-row:last-child td {
+        border-bottom: none;
+    }
+
+    .log-row:hover td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Badges & Chips */
+    .action-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 30px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .encrypt-badge {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .decrypt-badge {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .neutral-badge {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .file-name {
+        font-weight: 500;
+        color: var(--text);
+    }
+
+    .algorithm-chip {
+        display: inline-block;
+        padding: 4px 10px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-family: monospace;
+        color: var(--text-secondary);
+    }
+
+    .timestamp {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .time-date {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .time-time {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 16px;
+        opacity: 0.5;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    .empty-text {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .empty-hint {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .mt-4 {
+        margin-top: 1rem;
+    }
+
+    .btn-primary {
+        display: inline-block;
+        padding: 10px 20px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px var(--primary-glow);
+    }
+</style>
+{% endblock %}

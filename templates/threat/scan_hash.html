@@ -1,0 +1,2014 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Main Hash Scan Card -->
+        <div class="col-lg-8">
+            <div class="cyber-hash-card animate-fade-in">
+                <!-- Scanning Effects -->
+                <div class="scan-line"></div>
+                <div class="scan-pulse"></div>
+                <div class="matrix-rain"></div>
+                <div class="floating-particles">
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                </div>
+
+                <!-- Corner Decorations -->
+                <div class="corner top-left"></div>
+                <div class="corner top-right"></div>
+                <div class="corner bottom-left"></div>
+                <div class="corner bottom-right"></div>
+
+                <!-- Header with Hash Animation -->
+                <div class="scan-header">
+                    <div class="header-icon">
+                        <div class="hash-container">
+                            <i class="bi bi-fingerprint"></i>
+                            <div class="hash-rings">
+                                <span class="ring r1"></span>
+                                <span class="ring r2"></span>
+                                <span class="ring r3"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <h2 class="glitch-text" data-text="HASH THREAT LOOKUP">HASH THREAT LOOKUP</h2>
+                    <p class="typing-text">Search SHA256, MD5, or SHA1 against 5M+ malware database</p>
+                </div>
+
+                <!-- Hash Input Form -->
+                <form method="POST" action="{{ url_for('phishing.scan_hash') }}" class="cyber-hash-form" id="hashForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="hash-input-group">
+                        <div class="cyber-input-wrapper">
+                            <i class="bi bi-hash input-icon"></i>
+                            <input type="text" 
+                                   name="hash" 
+                                   class="cyber-input" 
+                                   placeholder="Enter SHA256 / MD5 / SHA1 hash..." 
+                                   id="hashInput"
+                                   pattern="[A-Fa-f0-9]{32,128}"
+                                   title="Please enter a valid hash (32-128 hex characters)"
+                                   required>
+                            <span class="input-border"></span>
+                            <span class="input-glow"></span>
+                            <span class="hash-validator" id="hashValidator"></span>
+                        </div>
+                        <button type="submit" class="cyber-scan-btn" id="scanBtn">
+                            <span class="btn-text">LOOKUP HASH</span>
+                            <span class="btn-glitch"></span>
+                            <span class="btn-scan"></span>
+                            <span class="btn-particles"></span>
+                        </button>
+                    </div>
+
+                    <!-- Hash Type Selector -->
+                    <div class="hash-type-selector">
+                        <span class="type-label">Hash Type:</span>
+                        <button type="button" class="type-btn active" onclick="setHashType('sha256')">SHA256</button>
+                        <button type="button" class="type-btn" onclick="setHashType('md5')">MD5</button>
+                        <button type="button" class="type-btn" onclick="setHashType('sha1')">SHA1</button>
+                    </div>
+
+                    <!-- Quick Examples -->
+                    <div class="quick-examples">
+                        <span class="examples-label">Try examples:</span>
+                        <button type="button" class="example-link" onclick="setHash('d41d8cd98f00b204e9800998ecf8427e')">MD5 (Empty)</button>
+                        <button type="button" class="example-link" onclick="setHash('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')">SHA256 (Empty)</button>
+                        <button type="button" class="example-link" onclick="setHash('da39a3ee5e6b4b0d3255bfef95601890afd80709')">SHA1 (Empty)</button>
+                    </div>
+                </form>
+
+                {% if result %}
+                <!-- Scan Results -->
+                <div class="scan-results" id="scanResults">
+                    <!-- Result Header -->
+                    <div class="result-header">
+                        <div class="result-title">
+                            <i class="bi bi-shield-fill-check"></i>
+                            <h3>Hash Analysis Complete</h3>
+                        </div>
+                        
+                        {% if result.classification == 'threat' %}
+                        <div class="result-badge danger">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span>MALICIOUS DETECTED</span>
+                            <div class="badge-pulse"></div>
+                        </div>
+                        {% elif result.classification == 'safe' %}
+                        <div class="result-badge success">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>CLEAN - NO THREATS</span>
+                        </div>
+                        {% else %}
+                        <div class="result-badge unknown">
+                            <i class="bi bi-question-circle-fill"></i>
+                            <span>UNKNOWN / NOT FOUND</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Hash Details -->
+                    <div class="hash-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Hash Type:</span>
+                            <span class="detail-value">
+                                {% if result.hash|length == 32 %}
+                                <span class="hash-type-badge md5">MD5</span>
+                                {% elif result.hash|length == 40 %}
+                                <span class="hash-type-badge sha1">SHA1</span>
+                                {% elif result.hash|length == 64 %}
+                                <span class="hash-type-badge sha256">SHA256</span>
+                                {% else %}
+                                <span class="hash-type-badge unknown">UNKNOWN</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">First Seen:</span>
+                            <span class="detail-value">{{ result.first_seen|default('Unknown') }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Last Seen:</span>
+                            <span class="detail-value">{{ result.last_seen|default('Unknown') }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Times Reported:</span>
+                            <span class="detail-value">{{ result.times_reported|default(0) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Hash Display with Copy -->
+                    <div class="hash-display">
+                        <div class="hash-header">
+                            <i class="bi bi-fingerprint"></i>
+                            <span>Hash Value</span>
+                            <button class="copy-btn" onclick="copyHash('{{ result.hash }}')">
+                                <i class="bi bi-files"></i>
+                            </button>
+                        </div>
+                        <div class="hash-value-container">
+                            <code class="hash-value">{{ result.hash }}</code>
+                        </div>
+                    </div>
+
+                    <!-- Results Grid -->
+                    <div class="results-grid">
+                        <!-- Detection Stats Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="100">
+                            <div class="card-header">
+                                <i class="bi bi-virus"></i>
+                                <h4>Detection Statistics</h4>
+                            </div>
+                            <div class="card-content">
+                                {% set total_engines = result.vt_stats.total|default(0) %}
+                                {% set malicious_count = result.vt_stats.malicious|default(0) %}
+                                {% set detection_rate = (malicious_count / total_engines * 100)|round|int if total_engines > 0 else 0 %}
+                                
+                                <div class="detection-meter">
+                                    <div class="meter-label">Detection Rate</div>
+                                    <div class="meter-bar">
+                                        <div class="meter-fill" style="width: {{ detection_rate }}%; background: {% if detection_rate > 30 %}#ff00ff{% elif detection_rate > 10 %}#ffff00{% else %}#00ff00{% endif %};"></div>
+                                    </div>
+                                    <div class="meter-value">{{ detection_rate }}% ({{ malicious_count }}/{{ total_engines }})</div>
+                                </div>
+
+                                <div class="detection-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-label">Malicious</span>
+                                        <span class="stat-value text-danger">{{ result.vt_stats.malicious|default(0) }}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Suspicious</span>
+                                        <span class="stat-value text-warning">{{ result.vt_stats.suspicious|default(0) }}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Harmless</span>
+                                        <span class="stat-value text-success">{{ result.vt_stats.harmless|default(0) }}</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-label">Undetected</span>
+                                        <span class="stat-value">{{ result.vt_stats.undetected|default(0) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Threat Intelligence Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="200">
+                            <div class="card-header">
+                                <i class="bi bi-shield-shaded"></i>
+                                <h4>Threat Intelligence</h4>
+                            </div>
+                            <div class="card-content">
+                                <div class="intel-list">
+                                    <div class="intel-item">
+                                        <i class="bi bi-tag"></i>
+                                        <span class="intel-label">Threat Name:</span>
+                                        <span class="intel-value">{{ result.threat_name|default('Generic Malware') }}</span>
+                                    </div>
+                                    <div class="intel-item">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <span class="intel-label">Threat Type:</span>
+                                        <span class="intel-value">{{ result.threat_type|default('Trojan') }}</span>
+                                    </div>
+                                    <div class="intel-item">
+                                        <i class="bi bi-calendar"></i>
+                                        <span class="intel-label">First Submission:</span>
+                                        <span class="intel-value">{{ result.first_submission|default('2023-01-01') }}</span>
+                                    </div>
+                                    <div class="intel-item">
+                                        <i class="bi bi-globe"></i>
+                                        <span class="intel-label">Countries Affected:</span>
+                                        <span class="intel-value">{{ result.countries|default('Global') }}</span>
+                                    </div>
+                                    <div class="intel-item">
+                                        <i class="bi bi-shield-check"></i>
+                                        <span class="intel-label">IsMalicious:</span>
+                                        <span class="intel-value">
+                                            {% if result.ismalicious_stats.status == 'success' and result.ismalicious_stats.is_malicious %}
+                                            <span class="text-danger">Malicious</span>
+                                            {% elif result.ismalicious_stats.status == 'success' %}
+                                            <span class="text-success">Safe</span>
+                                            {% elif result.ismalicious_stats.status == 'unconfigured' %}
+                                            <span class="text-secondary">Unconfigured</span>
+                                            {% elif result.ismalicious_stats.status == 'rate_limited' %}
+                                            <span class="text-warning">Rate Limited</span>
+                                            {% else %}
+                                            <span class="text-secondary">Unknown</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {% if result.tags %}
+                                <div class="threat-tags">
+                                    <h6>Tags:</h6>
+                                    {% for tag in result.tags %}
+                                    <span class="tag">{{ tag }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- File Information Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="300">
+                            <div class="card-header">
+                                <i class="bi bi-file-earmark-binary"></i>
+                                <h4>File Information</h4>
+                            </div>
+                            <div class="card-content">
+                                <div class="file-info-list">
+                                    <div class="info-item">
+                                        <span class="info-label">File Name:</span>
+                                        <span class="info-value">{{ result.file_name|default('unknown.exe') }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">File Size:</span>
+                                        <span class="info-value">{{ result.file_size|default('1.2 MB') }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">File Type:</span>
+                                        <span class="info-value">{{ result.file_type|default('PE32 executable') }}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Magic Byte:</span>
+                                        <span class="info-value">{{ result.magic_byte|default('4D 5A') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Verdict Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="400">
+                            <div class="card-header">
+                                <i class="bi bi-clipboard-check"></i>
+                                <h4>Security Verdict</h4>
+                            </div>
+                            <div class="card-content">
+                                {% set total = result.vt_stats.total|default(1) %}
+                                {% set malicious = result.vt_stats.malicious|default(0) %}
+                                {% set threat_percentage = (malicious / total * 100)|round|int if total > 0 else 0 %}
+                                {% set threat_level = 'CRITICAL' if threat_percentage > 50 else 'HIGH' if threat_percentage > 30 else 'MEDIUM' if threat_percentage > 10 else 'LOW' if threat_percentage > 0 else 'CLEAN' %}
+                                {% set level_color = '#ff0000' if threat_level == 'CRITICAL' else '#ff00ff' if threat_level == 'HIGH' else '#ffff00' if threat_level == 'MEDIUM' else '#00ff00' if threat_level == 'LOW' else '#00ffff' %}
+                                
+                                <div class="verdict-display" style="border-color: {{ level_color }};">
+                                    <div class="verdict-level" style="color: {{ level_color }};">{{ threat_level }}</div>
+                                    <div class="verdict-risk">Risk Level</div>
+                                </div>
+
+                                <div class="verdict-actions">
+                                    {% if threat_level != 'CLEAN' %}
+                                    <div class="action-item">
+                                        <i class="bi bi-shield-x text-danger"></i>
+                                        <span>This hash is associated with malware</span>
+                                    </div>
+                                    <div class="action-item">
+                                        <i class="bi bi-file-x text-danger"></i>
+                                        <span>Avoid downloading this file</span>
+                                    </div>
+                                    {% else %}
+                                    <div class="action-item">
+                                        <i class="bi bi-check-circle text-success"></i>
+                                        <span>No threats associated with this hash</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Detections -->
+                    {% if result.vt_stats.top_engines %}
+                    <div class="top-detections" data-aos="fade-up">
+                        <h4><i class="bi bi-trophy"></i> Top Detections</h4>
+                        <div class="engines-list">
+                            {% for engine in result.vt_stats.top_engines[:8] %}
+                            <div class="engine-card">
+                                <div class="engine-name">{{ engine.name }}</div>
+                                <div class="engine-result {{ 'malicious' if engine.category == 'malicious' else 'suspicious' }}">
+                                    {{ engine.result }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Related Hashes -->
+                    {% if result.related_hashes %}
+                    <div class="related-hashes" data-aos="fade-up">
+                        <h4><i class="bi bi-diagram-3"></i> Related Hashes</h4>
+                        <div class="related-list">
+                            {% for hash in result.related_hashes[:3] %}
+                            <div class="related-item">
+                                <span class="related-type">{{ hash.type }}</span>
+                                <code class="related-value">{{ hash.value }}</code>
+                                <button class="copy-small" onclick="copyHash('{{ hash.value }}')">
+                                    <i class="bi bi-files"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- VirusTotal Link -->
+                    <div class="vt-link-container">
+                        <a href="{{ result.vt_url }}" target="_blank" class="vt-link">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                            View Full Report on VirusTotal
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Information Sidebar -->
+        <div class="col-lg-4">
+            <div class="info-sidebar">
+                <!-- Hash Statistics -->
+                <div class="info-card" data-aos="fade-left" data-aos-delay="100">
+                    <div class="card-header">
+                        <i class="bi bi-graph-up"></i>
+                        <h3>Hash Database Stats</h3>
+                    </div>
+                    <div class="stats-container">
+                        <div class="stat-block">
+                            <span class="stat-number">5.2M+</span>
+                            <span class="stat-desc">Malware Hashes</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-number">2.1M</span>
+                            <span class="stat-desc">Clean Files</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-number">70+</span>
+                            <span class="stat-desc">AV Engines</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-number">150+</span>
+                            <span class="stat-desc">Countries</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hash Types Guide -->
+                <div class="info-card" data-aos="fade-left" data-aos-delay="200">
+                    <div class="card-header">
+                        <i class="bi bi-hash"></i>
+                        <h3>Hash Types Guide</h3>
+                    </div>
+                    <div class="hash-guide">
+                        <div class="guide-item">
+                            <span class="guide-badge md5">MD5</span>
+                            <span class="guide-desc">32 characters - Fast but less secure</span>
+                        </div>
+                        <div class="guide-item">
+                            <span class="guide-badge sha1">SHA1</span>
+                            <span class="guide-desc">40 characters - Deprecated</span>
+                        </div>
+                        <div class="guide-item">
+                            <span class="guide-badge sha256">SHA256</span>
+                            <span class="guide-desc">64 characters - Recommended</span>
+                        </div>
+                        <div class="guide-item">
+                            <span class="guide-badge sha512">SHA512</span>
+                            <span class="guide-desc">128 characters - Most secure</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prevention Tips -->
+                <div class="info-card" data-aos="fade-left" data-aos-delay="300">
+                    <div class="card-header">
+                        <i class="bi bi-shield-plus"></i>
+                        <h3>Hash Security Tips</h3>
+                    </div>
+                    <div class="tips-list">
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Verify Downloads</h4>
+                                <p>Always check hash of downloaded files</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Use Official Sources</h4>
+                                <p>Get hashes from trusted websites</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Compare Multiple Sources</h4>
+                                <p>Cross-reference with different databases</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Store Hashes Securely</h4>
+                                <p>Keep checksums of important files</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Common Threats -->
+                <div class="info-card warning-card" data-aos="fade-left" data-aos-delay="400">
+                    <div class="card-header">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <h3>Known Threat Families</h3>
+                    </div>
+                    <div class="threat-families">
+                        <div class="family-item">
+                            <span class="family-name">Emotet</span>
+                            <span class="family-count">2.3M hashes</span>
+                        </div>
+                        <div class="family-item">
+                            <span class="family-name">Trickbot</span>
+                            <span class="family-count">1.8M hashes</span>
+                        </div>
+                        <div class="family-item">
+                            <span class="family-name">Ryuk</span>
+                            <span class="family-count">950K hashes</span>
+                        </div>
+                        <div class="family-item">
+                            <span class="family-name">Cobalt Strike</span>
+                            <span class="family-count">1.1M hashes</span>
+                        </div>
+                        <div class="family-item">
+                            <span class="family-name">Mirai</span>
+                            <span class="family-count">780K hashes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hash Tools -->
+                <div class="info-card emergency-card" data-aos="fade-left" data-aos-delay="500">
+                    <div class="card-header">
+                        <i class="bi bi-tools"></i>
+                        <h3>Hash Tools</h3>
+                    </div>
+                    <div class="tools-list">
+                        <div class="tool-item">
+                            <i class="bi bi-calculator"></i>
+                            <span>Online Hash Generator</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="bi bi-file-binary"></i>
+                            <span>HashMyFiles (Windows)</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="bi bi-terminal"></i>
+                            <span>shasum / md5 (Linux/Mac)</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="bi bi-cloud"></i>
+                            <span>VirusTotal API</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ===== HASH SCANNER PAGE CYBER STYLES ===== */
+
+/* Main Card */
+.cyber-hash-card {
+    position: relative;
+    background: rgba(10, 15, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid #00ffff;
+    padding: 2rem;
+    overflow: hidden;
+    animation: cardAppear 0.8s ease-out;
+    box-shadow: 0 0 50px rgba(0, 255, 255, 0.2);
+}
+
+@keyframes cardAppear {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Matrix Rain */
+.matrix-rain {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 255, 255, 0.02) 2px,
+        rgba(0, 255, 255, 0.02) 4px
+    );
+    pointer-events: none;
+    animation: matrixMove 20s linear infinite;
+}
+
+@keyframes matrixMove {
+    from { background-position: 0 0; }
+    to { background-position: 0 100px; }
+}
+
+/* Scan Effects */
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00ffff, #ff00ff, #00ffff, transparent);
+    animation: scanMove 4s linear infinite;
+}
+
+@keyframes scanMove {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.scan-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 30% 50%, rgba(0, 255, 255, 0.1), transparent);
+    animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+}
+
+/* Floating Particles */
+.floating-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.floating-particles .particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #00ffff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: particleFloat 4s linear infinite;
+}
+
+.floating-particles .particle:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
+.floating-particles .particle:nth-child(2) { top: 40%; right: 15%; animation-delay: 0.7s; }
+.floating-particles .particle:nth-child(3) { bottom: 30%; left: 20%; animation-delay: 1.4s; }
+.floating-particles .particle:nth-child(4) { bottom: 50%; right: 25%; animation-delay: 2.1s; }
+.floating-particles .particle:nth-child(5) { top: 70%; left: 30%; animation-delay: 2.8s; }
+.floating-particles .particle:nth-child(6) { bottom: 20%; right: 35%; animation-delay: 3.5s; }
+
+@keyframes particleFloat {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100px) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Corner Decorations */
+.corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ffff;
+    animation: cornerPulse 2s ease-in-out infinite;
+}
+
+.corner.top-left {
+    top: 10px;
+    left: 10px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.corner.top-right {
+    top: 10px;
+    right: 10px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.corner.bottom-left {
+    bottom: 10px;
+    left: 10px;
+    border-right: none;
+    border-top: none;
+}
+
+.corner.bottom-right {
+    bottom: 10px;
+    right: 10px;
+    border-left: none;
+    border-top: none;
+}
+
+@keyframes cornerPulse {
+    0%, 100% { 
+        width: 20px;
+        height: 20px;
+        opacity: 1;
+    }
+    50% { 
+        width: 30px;
+        height: 30px;
+        opacity: 0.7;
+        border-color: #ff00ff;
+    }
+}
+
+/* Header */
+.scan-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.header-icon {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hash-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hash-container i {
+    font-size: 3.5rem;
+    color: #00ffff;
+    text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    animation: hashPulse 2s ease-in-out infinite;
+    z-index: 2;
+}
+
+@keyframes hashPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px #00ffff); }
+    50% { transform: scale(1.1); filter: drop-shadow(0 0 30px #00ffff); }
+}
+
+.hash-rings {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.hash-rings .ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 2px solid #00ffff;
+    border-radius: 50%;
+    animation: ringExpand 3s ease-out infinite;
+}
+
+.hash-rings .r1 {
+    width: 100%;
+    height: 100%;
+    animation-delay: 0s;
+}
+
+.hash-rings .r2 {
+    width: 130%;
+    height: 130%;
+    animation-delay: 0.5s;
+    opacity: 0.5;
+}
+
+.hash-rings .r3 {
+    width: 160%;
+    height: 160%;
+    animation-delay: 1s;
+    opacity: 0.3;
+}
+
+@keyframes ringExpand {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0;
+    }
+}
+
+.glitch-text {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    position: relative;
+    animation: glitchSkew 4s infinite;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.glitch-text::before {
+    color: #ff00ff;
+    z-index: -1;
+    animation: glitchOffset 0.3s infinite;
+}
+
+.glitch-text::after {
+    color: #00ffff;
+    z-index: -2;
+    animation: glitchOffset 0.3s infinite reverse;
+}
+
+@keyframes glitchSkew {
+    0%, 100% { transform: skew(0deg); }
+    92% { transform: skew(2deg); }
+    94% { transform: skew(-2deg); }
+    96% { transform: skew(1deg); }
+    98% { transform: skew(-1deg); }
+}
+
+@keyframes glitchOffset {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(2px, -2px); }
+    60% { transform: translate(-2px, -2px); }
+    80% { transform: translate(2px, 2px); }
+    100% { transform: translate(0); }
+}
+
+.typing-text {
+    color: #888;
+    font-size: 1rem;
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid #00ffff;
+    animation: typing 3s steps(50) infinite, blink 0.5s step-end infinite;
+    max-width: fit-content;
+    margin: 0 auto;
+}
+
+@keyframes typing {
+    0%, 100% { width: 0; }
+    50% { width: 450px; }
+}
+
+@keyframes blink {
+    50% { border-color: transparent; }
+}
+
+/* Hash Form */
+.hash-input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.cyber-input-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #00ffff;
+    z-index: 3;
+    font-size: 1.2rem;
+}
+
+.cyber-input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: #fff;
+    font-size: 1rem;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s;
+    font-family: 'Courier New', monospace;
+}
+
+.cyber-input:focus {
+    outline: none;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.cyber-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.input-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #00ffff;
+    pointer-events: none;
+    transition: all 0.3s;
+    animation: borderPulse 3s infinite;
+}
+
+@keyframes borderPulse {
+    0%, 100% { 
+        border-color: #00ffff;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    }
+    50% { 
+        border-color: #ff00ff;
+        box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+    }
+}
+
+.input-glow {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+    pointer-events: none;
+}
+
+.cyber-input-wrapper:hover .input-glow {
+    left: 100%;
+}
+
+.hash-validator {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    z-index: 3;
+}
+
+.hash-validator.valid {
+    background: #00ff00;
+    box-shadow: 0 0 10px #00ff00;
+}
+
+.hash-validator.invalid {
+    background: #ff00ff;
+    box-shadow: 0 0 10px #ff00ff;
+}
+
+/* Hash Type Selector */
+.hash-type-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.type-label {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.type-btn {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    color: #888;
+    padding: 0.3rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Courier New', monospace;
+}
+
+.type-btn:hover {
+    border-color: #00ffff;
+    color: #00ffff;
+}
+
+.type-btn.active {
+    background: rgba(0, 255, 255, 0.2);
+    border-color: #00ffff;
+    color: #00ffff;
+}
+
+/* Scan Button */
+.cyber-scan-btn {
+    position: relative;
+    padding: 0 2rem;
+    background: linear-gradient(135deg, #00ffff, #00ccff);
+    border: none;
+    color: #0a0c0f;
+    font-family: inherit;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s;
+    min-width: 150px;
+    animation: btnPulse 2s ease-in-out infinite;
+}
+
+@keyframes btnPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.btn-glitch {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: btnGlitch 3s infinite;
+}
+
+@keyframes btnGlitch {
+    0%, 100% { transform: translateX(-100%); }
+    92% { transform: translateX(100%); }
+    94% { transform: translateX(-100%); }
+    96% { transform: translateX(50%); }
+    98% { transform: translateX(-50%); }
+}
+
+.btn-scan {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #fff, transparent);
+    animation: btnScan 2s linear infinite;
+}
+
+@keyframes btnScan {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.cyber-scan-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(0, 255, 255, 0.8);
+}
+
+/* Quick Examples */
+.quick-examples {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.examples-label {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.example-link {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    color: #00ffff;
+    padding: 0.3rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.8rem;
+    font-family: 'Courier New', monospace;
+}
+
+.example-link:hover {
+    border-color: #00ffff;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Scan Results */
+.scan-results {
+    margin-top: 3rem;
+    animation: resultsAppear 0.8s ease-out;
+}
+
+@keyframes resultsAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.result-title {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.result-title i {
+    color: #00ffff;
+    font-size: 1.5rem;
+    animation: titleGlow 2s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+    0%, 100% { filter: drop-shadow(0 0 5px #00ffff); }
+    50% { filter: drop-shadow(0 0 15px #00ffff); }
+}
+
+.result-title h3 {
+    color: #fff;
+    margin: 0;
+}
+
+.result-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.result-badge.danger {
+    background: rgba(255, 0, 255, 0.2);
+    border: 1px solid #ff00ff;
+    color: #ff00ff;
+}
+
+.result-badge.success {
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px solid #00ff00;
+    color: #00ff00;
+}
+
+.result-badge.unknown {
+    background: rgba(128, 128, 128, 0.2);
+    border: 1px solid #888;
+    color: #888;
+}
+
+.badge-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255,0,255,0.3), transparent);
+    animation: badgePulse 1s ease-out infinite;
+}
+
+@keyframes badgePulse {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+/* Hash Details */
+.hash-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    color: #888;
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+}
+
+.detail-value {
+    color: #fff;
+}
+
+.hash-type-badge {
+    display: inline-block;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.hash-type-badge.md5 {
+    background: rgba(255, 0, 255, 0.2);
+    border: 1px solid #ff00ff;
+    color: #ff00ff;
+}
+
+.hash-type-badge.sha1 {
+    background: rgba(255, 165, 0, 0.2);
+    border: 1px solid #ffa500;
+    color: #ffa500;
+}
+
+.hash-type-badge.sha256 {
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px solid #00ff00;
+    color: #00ff00;
+}
+
+/* Hash Display */
+.hash-display {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #00ffff;
+}
+
+.hash-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+    color: #00ffff;
+}
+
+.hash-header i {
+    font-size: 1.2rem;
+}
+
+.copy-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid #00ffff;
+    color: #00ffff;
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.copy-btn:hover {
+    background: #00ffff;
+    color: #0a0c0f;
+}
+
+.hash-value-container {
+    max-height: 100px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.hash-value {
+    color: #00ffff;
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
+    font-size: 0.9rem;
+}
+
+/* Results Grid */
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.result-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 1.5rem;
+    transition: all 0.3s;
+}
+
+.result-card:hover {
+    border-color: #00ffff;
+    transform: translateY(-5px);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-header i {
+    color: #00ffff;
+    font-size: 1.5rem;
+}
+
+.card-header h4 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* Detection Meter */
+.detection-meter {
+    margin-bottom: 1.5rem;
+}
+
+.meter-label {
+    color: #888;
+    margin-bottom: 0.3rem;
+}
+
+.meter-bar {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #00ffff;
+    overflow: hidden;
+    margin-bottom: 0.3rem;
+}
+
+.meter-fill {
+    height: 100%;
+    animation: meterFill 1s ease-out;
+}
+
+@keyframes meterFill {
+    from { width: 0; }
+}
+
+.meter-value {
+    text-align: right;
+    color: #00ffff;
+    font-size: 0.9rem;
+}
+
+/* Detection Stats */
+.detection-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.stat-label {
+    display: block;
+    color: #888;
+    font-size: 0.8rem;
+    margin-bottom: 0.2rem;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* Intel List */
+.intel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.intel-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.3rem;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.intel-item i {
+    color: #00ffff;
+    font-size: 1rem;
+}
+
+.intel-label {
+    color: #888;
+    min-width: 120px;
+}
+
+.intel-value {
+    color: #fff;
+}
+
+/* Threat Tags */
+.threat-tags {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.threat-tags h6 {
+    color: #00ffff;
+    margin-bottom: 0.5rem;
+}
+
+.tag {
+    display: inline-block;
+    background: rgba(255, 0, 255, 0.2);
+    border: 1px solid #ff00ff;
+    color: #ff00ff;
+    padding: 0.2rem 0.8rem;
+    margin: 0.2rem;
+    font-size: 0.8rem;
+}
+
+/* File Info */
+.file-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.info-label {
+    color: #888;
+}
+
+.info-value {
+    color: #fff;
+    font-family: 'Courier New', monospace;
+}
+
+/* Verdict Display */
+.verdict-display {
+    text-align: center;
+    padding: 1rem;
+    border: 2px solid;
+    margin-bottom: 1rem;
+}
+
+.verdict-level {
+    font-size: 2rem;
+    font-weight: 700;
+    animation: verdictPulse 2s ease-in-out infinite;
+}
+
+@keyframes verdictPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.verdict-risk {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.verdict-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+}
+
+/* Top Detections */
+.top-detections {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.top-detections h4 {
+    color: #00ffff;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.engines-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem;
+}
+
+.engine-card {
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    text-align: center;
+}
+
+.engine-name {
+    color: #00ffff;
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+}
+
+.engine-result {
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.engine-result.malicious {
+    color: #ff00ff;
+}
+
+.engine-result.suspicious {
+    color: #ffff00;
+}
+
+/* Related Hashes */
+.related-hashes {
+    margin-top: 2rem;
+}
+
+.related-hashes h4 {
+    color: #00ffff;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.related-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.related-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.related-type {
+    background: rgba(0, 255, 255, 0.2);
+    color: #00ffff;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+    min-width: 60px;
+    text-align: center;
+}
+
+.related-value {
+    flex: 1;
+    color: #888;
+    font-size: 0.8rem;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.copy-small {
+    background: transparent;
+    border: 1px solid #00ffff;
+    color: #00ffff;
+    padding: 0.2rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.copy-small:hover {
+    background: #00ffff;
+    color: #0a0c0f;
+}
+
+/* VT Link */
+.vt-link-container {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.vt-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #00ffff;
+    text-decoration: none;
+    padding: 0.8rem 2rem;
+    border: 1px solid #00ffff;
+    transition: all 0.3s;
+}
+
+.vt-link:hover {
+    background: #00ffff;
+    color: #0a0c0f;
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+}
+
+/* Info Sidebar */
+.info-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.info-card {
+    background: rgba(10, 15, 20, 0.95);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s;
+}
+
+.info-card:hover {
+    border-color: #00ffff;
+    transform: translateX(-5px);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+}
+
+.info-card.warning-card {
+    border-color: #ff00ff;
+}
+
+.info-card.emergency-card {
+    border-color: #ff0000;
+}
+
+.info-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-card .card-header i {
+    color: #00ffff;
+    font-size: 1.5rem;
+}
+
+.info-card.warning-card .card-header i {
+    color: #ff00ff;
+}
+
+.info-card.emergency-card .card-header i {
+    color: #ff0000;
+}
+
+.info-card .card-header h3 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+/* Stats Container */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.stat-block {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.stat-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #00ffff;
+    margin-bottom: 0.3rem;
+}
+
+.stat-desc {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+/* Hash Guide */
+.hash-guide {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.guide-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.guide-badge {
+    padding: 0.2rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 70px;
+    text-align: center;
+}
+
+.guide-badge.md5 {
+    background: rgba(255, 0, 255, 0.2);
+    border: 1px solid #ff00ff;
+    color: #ff00ff;
+}
+
+.guide-badge.sha1 {
+    background: rgba(255, 165, 0, 0.2);
+    border: 1px solid #ffa500;
+    color: #ffa500;
+}
+
+.guide-badge.sha256 {
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px solid #00ff00;
+    color: #00ff00;
+}
+
+.guide-badge.sha512 {
+    background: rgba(0, 255, 255, 0.2);
+    border: 1px solid #00ffff;
+    color: #00ffff;
+}
+
+.guide-desc {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+/* Tips List */
+.tips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tip-item {
+    display: flex;
+    gap: 1rem;
+}
+
+.tip-icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid #00ffff;
+    border-radius: 50%;
+    color: #00ffff;
+    flex-shrink: 0;
+}
+
+.tip-content h4 {
+    color: #fff;
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+}
+
+.tip-content p {
+    color: #888;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Threat Families */
+.threat-families {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.family-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 0, 255, 0.2);
+}
+
+.family-name {
+    color: #ff00ff;
+    font-weight: 600;
+}
+
+.family-count {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+/* Tools List */
+.tools-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.tool-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 0, 0, 0.2);
+    color: #e0e0e0;
+}
+
+.tool-item i {
+    color: #ff0000;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .engines-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .glitch-text {
+        font-size: 1.5rem;
+    }
+    
+    .typing-text {
+        font-size: 0.8rem;
+        white-space: normal;
+        animation: none;
+        border: none;
+    }
+    
+    .hash-input-group {
+        flex-direction: column;
+    }
+    
+    .cyber-scan-btn {
+        padding: 1rem;
+    }
+    
+    .result-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .hash-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .engines-list {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<!-- AOS Animation Script -->
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+<script>
+// Initialize AOS
+AOS.init({
+    duration: 600,
+    once: true
+});
+
+// Hash Validation
+document.addEventListener('DOMContentLoaded', function() {
+    const hashInput = document.getElementById('hashInput');
+    const hashValidator = document.getElementById('hashValidator');
+    
+    if(hashInput) {
+        hashInput.addEventListener('input', function() {
+            const hash = this.value.trim();
+            const isValid = /^[A-Fa-f0-9]{32,128}$/.test(hash);
+            
+            if(isValid) {
+                hashValidator.className = 'hash-validator valid';
+            } else if(hash.length > 0) {
+                hashValidator.className = 'hash-validator invalid';
+            } else {
+                hashValidator.className = 'hash-validator';
+            }
+        });
+    }
+    
+    // Set hash type and example
+    window.setHashType = function(type) {
+        document.querySelectorAll('.type-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        // Update placeholder based on type
+        if(type === 'sha256') {
+            hashInput.placeholder = 'Enter SHA256 hash (64 chars)...';
+        } else if(type === 'md5') {
+            hashInput.placeholder = 'Enter MD5 hash (32 chars)...';
+        } else if(type === 'sha1') {
+            hashInput.placeholder = 'Enter SHA1 hash (40 chars)...';
+        }
+    };
+    
+    // Set example hash
+    window.setHash = function(hash) {
+        hashInput.value = hash;
+        hashInput.dispatchEvent(new Event('input'));
+    };
+    
+    // Copy hash function
+    window.copyHash = function(hash) {
+        navigator.clipboard.writeText(hash).then(() => {
+            const btn = event.target.closest('.copy-btn, .copy-small');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+            }, 2000);
+        });
+    };
+    
+    // Form submission
+    const hashForm = document.getElementById('hashForm');
+    const scanBtn = document.getElementById('scanBtn');
+    
+    if(hashForm) {
+        hashForm.addEventListener('submit', function(e) {
+            const hash = hashInput.value.trim();
+            if(!hash || !/^[A-Fa-f0-9]{32,128}$/.test(hash)) {
+                e.preventDefault();
+                alert('Please enter a valid hash (32-128 hex characters)');
+                return;
+            }
+            
+            scanBtn.innerHTML = '<span class="btn-text">SEARCHING...</span>';
+            scanBtn.style.animation = 'btnScanning 1s linear infinite';
+        });
+    }
+    
+    // Button mouse effect
+    if(scanBtn) {
+        scanBtn.addEventListener('mousemove', function(e) {
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const moveX = (x - rect.width/2) / 20;
+            const moveY = (y - rect.height/2) / 20;
+            
+            this.style.transform = `perspective(500px) rotateX(${moveY}deg) rotateY(${moveX}deg) scale(1.05)`;
+        });
+        
+        scanBtn.addEventListener('mouseleave', function() {
+            this.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
+        });
+    }
+});
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes btnScanning {
+        0%, 100% { filter: hue-rotate(0deg); }
+        50% { filter: hue-rotate(90deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

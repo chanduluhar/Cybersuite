@@ -1,0 +1,1328 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="result-page">
+    <!-- Animated background effects -->
+    <div class="confetti-container" id="confetti"></div>
+    <div class="result-particles"></div>
+    <div class="result-glow"></div>
+
+    <div class="result-wrapper">
+        <!-- Success animation -->
+        <div class="success-animation" data-animate="scale-in">
+            <div class="success-icon-wrapper">
+                {% if operation == 'encryption' %}
+                <div class="encryption-success">
+                    <span class="icon-lock">🔒</span>
+                    <span class="icon-arrow">→</span>
+                    <span class="icon-file">📁</span>
+                    <div class="success-ring"></div>
+                </div>
+                {% else %}
+                <div class="decryption-success">
+                    <span class="icon-lock">🔓</span>
+                    <span class="icon-arrow">→</span>
+                    <span class="icon-file">📄</span>
+                    <div class="success-ring"></div>
+                </div>
+                {% endif %}
+                <div class="success-checkmark">
+                    <span>✓</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main result card -->
+        <div class="result-card" data-animate="fade-up">
+            <div class="card-shine"></div>
+            <div class="card-particles"></div>
+
+            <!-- Card header -->
+            <div class="card-header">
+                <div class="header-badge">
+                    <span class="badge-dot"></span>
+                    <span class="badge-text">
+                        {% if operation == 'encryption' %}
+                        Encryption Complete
+                        {% else %}
+                        Decryption Complete
+                        {% endif %}
+                    </span>
+                </div>
+
+                <h1 class="card-title">
+                    {% if operation == 'encryption' %}
+                    <span class="title-word">File</span>
+                    <span class="title-word accent">Encrypted</span>
+                    {% else %}
+                    <span class="title-word">File</span>
+                    <span class="title-word accent">Decrypted</span>
+                    {% endif %}
+                </h1>
+
+                <p class="card-subtitle">
+                    {% if operation == 'encryption' %}
+                    Your file has been securely encrypted. Download the encrypted version below.
+                    {% else %}
+                    Your file has been successfully decrypted. Download the original file below.
+                    {% endif %}
+                </p>
+
+                {% if operation == 'encryption' %}
+                <div class="generated-key-panel">
+                    {% if generated_decryption_key %}
+                    <div class="generated-key-title">Save this decryption key now</div>
+                    <div class="generated-key-value" id="generatedDecryptionKey">{{ generated_decryption_key }}</div>
+                    <div class="generated-key-help">This key is required for decryption and shown only once.</div>
+                    <button type="button" class="copy-key-btn" onclick="copyGeneratedKey()">Copy key</button>
+                    {% else %}
+                    <div class="generated-key-title">Decryption key not available</div>
+                    <div class="generated-key-help">For security, keys are shown only immediately after encryption.
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- File details -->
+            <div class="file-details-panel">
+                <div class="panel-header">
+                    <span class="panel-icon">📋</span>
+                    <span class="panel-title">File Information</span>
+                    <span class="panel-timestamp">{{ file.created_at.strftime('%H:%M:%S') }}</span>
+                </div>
+
+                <div class="file-visual">
+                    <div class="file-icon-large">
+                        {% set ext = file.original_filename.split('.')[-1].upper() %}
+                        <span class="file-icon-main">
+                            {% if ext in ['PDF'] %}📕
+                            {% elif ext in ['DOC', 'DOCX'] %}📘
+                            {% elif ext in ['XLS', 'XLSX'] %}📗
+                            {% elif ext in ['JPG', 'JPEG', 'PNG', 'GIF'] %}🖼️
+                            {% elif ext in ['MP3', 'WAV'] %}🎵
+                            {% elif ext in ['MP4', 'MOV'] %}🎬
+                            {% elif ext in ['ZIP', 'RAR', '7Z'] %}📦
+                            {% else %}📄
+                            {% endif %}
+                        </span>
+                        <span class="file-type-badge">{{ ext }}</span>
+                    </div>
+                    <div class="file-name-large" title="{{ file.original_filename }}">
+                        {{ file.original_filename }}
+                    </div>
+                </div>
+
+                <div class="details-grid">
+                    <!-- Algorithm info -->
+                    <div class="detail-card algorithm-card">
+                        <div class="detail-icon">
+                            <span class="algo-icon">
+                                {% if file.encryption_algorithm == 'AES' %}🔐
+                                {% elif file.encryption_algorithm == 'CHACHA20' %}⚡
+                                {% elif file.encryption_algorithm == 'BLOWFISH' %}🐡
+                                {% else %}🔢
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Algorithm</span>
+                            <span class="detail-value">{{ file.encryption_algorithm }}</span>
+                            <span class="detail-sub">{{ file.cipher_mode }} mode</span>
+                        </div>
+                        <div class="detail-badge">
+                            <span class="badge-security high">
+                                {% if file.encryption_algorithm == 'AES' %}High Security
+                                {% elif file.encryption_algorithm == 'CHACHA20' %}Modern
+                                {% elif file.encryption_algorithm == 'BLOWFISH' %}Fast
+                                {% else %}Legacy
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Key size info -->
+                    <div class="detail-card keysize-card">
+                        <div class="detail-icon">
+                            <span class="key-icon">🔑</span>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Key Size</span>
+                            <span class="detail-value">{{ file.key_size }} bits</span>
+                            <span class="detail-sub">
+                                {% if file.key_size >= 256 %}Military grade
+                                {% elif file.key_size >= 192 %}High security
+                                {% else %}Standard
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ (file.key_size / 256) * 100 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timestamp info -->
+                    <div class="detail-card time-card">
+                        <div class="detail-icon">
+                            <span class="time-icon">⏱️</span>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Processed</span>
+                            <span class="detail-value">{{ file.created_at.strftime('%b %d, %Y') }}</span>
+                            <span class="detail-sub">{{ file.created_at.strftime('%H:%M:%S') }}</span>
+                        </div>
+                        <div class="time-indicator">
+                            <span class="time-dot"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security summary -->
+                <div class="security-summary">
+                    <div class="summary-row">
+                        <div class="summary-item">
+                            <span class="summary-icon">🧂</span>
+                            <span class="summary-text">Unique salt generated</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-icon">🔄</span>
+                            <span class="summary-text">600k PBKDF2 iterations</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-icon">📊</span>
+                            <span class="summary-text">Random IV applied</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="action-buttons">
+                {% if operation == 'encryption' %}
+                <a href="{{ url_for('crypto.download_encrypted', file_id=file.id) }}" class="btn-primary btn-large">
+                    <span class="btn-content">
+                        <span class="btn-icon">↓</span>
+                        <span class="btn-text">Download Encrypted File</span>
+                    </span>
+                    <span class="btn-glow"></span>
+                    <span class="btn-shine"></span>
+                </a>
+
+                <a href="{{ url_for('crypto.upload') }}" class="btn-secondary">
+                    <span class="btn-icon">←</span>
+                    <span class="btn-text">Back to Encryption</span>
+                </a>
+                {% else %}
+                <a href="{{ url_for('crypto.download_decrypted', file_id=file.id) }}" class="btn-primary btn-large">
+                    <span class="btn-content">
+                        <span class="btn-icon">↓</span>
+                        <span class="btn-text">Download Decrypted File</span>
+                    </span>
+                    <span class="btn-glow"></span>
+                    <span class="btn-shine"></span>
+                </a>
+
+                <a href="{{ url_for('crypto.decrypt_page') }}" class="btn-secondary">
+                    <span class="btn-icon">←</span>
+                    <span class="btn-text">Back to Decryption</span>
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Additional options -->
+            <div class="additional-options">
+                <span class="options-label">More options:</span>
+                <div class="options-list">
+                    <button class="option-btn" onclick="copyFileInfo()">
+                        <span class="option-icon">📋</span>
+                        <span class="option-text">Copy info</span>
+                    </button>
+                    <button class="option-btn" onclick="shareResult()">
+                        <span class="option-icon">📤</span>
+                        <span class="option-text">Share</span>
+                    </button>
+                    <button class="option-btn" onclick="saveToVault()">
+                        <span class="option-icon">🔒</span>
+                        <span class="option-text">Save to vault</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom properties */
+    .result-page {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-glow: rgba(99, 102, 241, 0.3);
+        --success: #10b981;
+        --success-glow: rgba(16, 185, 129, 0.3);
+        --surface: var(--bg-secondary);
+        --text: var(--text-primary);
+        --text-secondary: var(--text-secondary);
+        --border: var(--border-color);
+
+        min-height: calc(100vh - 80px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 24px;
+        position: relative;
+        overflow-x: hidden;
+    }
+
+    /* Confetti animation */
+    .confetti-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        z-index: 100;
+    }
+
+    /* Particle background */
+    .result-particles {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+            radial-gradient(circle at 20% 30%, var(--primary-glow) 0%, transparent 30%),
+            radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.2) 0%, transparent 30%),
+            radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 30%);
+        opacity: 0.5;
+        animation: particlesFloat 20s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    @keyframes particlesFloat {
+
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 0.5;
+        }
+
+        50% {
+            transform: scale(1.1);
+            opacity: 0.7;
+        }
+    }
+
+    .result-glow {
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        right: -50%;
+        bottom: -50%;
+        background: radial-gradient(circle at 30% 50%, var(--primary-glow), transparent 50%);
+        animation: glowPulse 8s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    @keyframes glowPulse {
+
+        0%,
+        100% {
+            opacity: 0.3;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 0.6;
+            transform: scale(1.2);
+        }
+    }
+
+    .result-wrapper {
+        max-width: 800px;
+        width: 100%;
+        position: relative;
+        z-index: 10;
+    }
+
+    /* Success animation */
+    .success-animation {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+    .success-icon-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .encryption-success,
+    .decryption-success {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 3.5rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .icon-lock,
+    .icon-file {
+        animation: successPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .icon-arrow {
+        animation: arrowSlide 0.8s ease-in-out infinite;
+    }
+
+    @keyframes successPop {
+        0% {
+            transform: scale(0);
+        }
+
+        80% {
+            transform: scale(1.2);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    @keyframes arrowSlide {
+
+        0%,
+        100% {
+            transform: translateX(0);
+            opacity: 0.5;
+        }
+
+        50% {
+            transform: translateX(10px);
+            opacity: 1;
+        }
+    }
+
+    .success-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100px;
+        height: 100px;
+        border: 2px solid var(--success);
+        border-radius: 50%;
+        animation: ringPulse 2s ease-out infinite;
+    }
+
+    @keyframes ringPulse {
+        0% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.5;
+        }
+
+        100% {
+            transform: translate(-50%, -50%) scale(1.5);
+            opacity: 0;
+        }
+    }
+
+    .success-checkmark {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        width: 40px;
+        height: 40px;
+        background: var(--success);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        font-weight: bold;
+        animation: checkmarkAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+    }
+
+    @keyframes checkmarkAppear {
+        0% {
+            transform: scale(0);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* Main card */
+    .result-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 40px;
+        padding: 40px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        animation: cardAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes cardAppear {
+        0% {
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .card-shine {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--primary), var(--primary-dark), var(--primary), transparent);
+        animation: shine 3s linear infinite;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    @keyframes shine {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    .card-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: radial-gradient(circle at 30% 40%, var(--primary-glow) 0%, transparent 20%);
+        opacity: 0.1;
+        animation: particlesMove 15s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .result-card> :not(.card-shine):not(.card-particles) {
+        position: relative;
+        z-index: 2;
+    }
+
+    @keyframes particlesMove {
+
+        0%,
+        100% {
+            transform: translate(0, 0);
+        }
+
+        50% {
+            transform: translate(2%, 2%);
+        }
+    }
+
+    /* Card header */
+    .card-header {
+        text-align: center;
+        margin-bottom: 32px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 30px;
+        margin-bottom: 20px;
+    }
+
+    .badge-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--success);
+        border-radius: 50%;
+        animation: badgePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes badgePulse {
+
+        0%,
+        100% {
+            opacity: 0.5;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 1;
+            transform: scale(1.5);
+        }
+    }
+
+    .badge-text {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .card-title {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .title-word {
+        animation: slideUpWord 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+    }
+
+    .title-word:nth-child(1) {
+        animation-delay: 0.2s;
+    }
+
+    .title-word:nth-child(2) {
+        animation-delay: 0.4s;
+    }
+
+    @keyframes slideUpWord {
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .title-word.accent {
+        background: linear-gradient(135deg, var(--primary), #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .card-subtitle {
+        color: var(--text-secondary);
+        font-size: 1rem;
+        max-width: 500px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .generated-key-panel {
+        max-width: 640px;
+        margin: 20px auto 0;
+        padding: 16px;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        border-radius: 14px;
+        background: rgba(245, 158, 11, 0.08);
+    }
+
+    .generated-key-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .generated-key-value {
+        font-family: monospace;
+        font-size: 0.95rem;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px dashed rgba(245, 158, 11, 0.6);
+        word-break: break-all;
+        background: rgba(0, 0, 0, 0.12);
+        margin-bottom: 8px;
+    }
+
+    .generated-key-help {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+    }
+
+    .copy-key-btn {
+        margin-top: 10px;
+        border: none;
+        border-radius: 10px;
+        background: #f59e0b;
+        color: #1f2937;
+        font-weight: 700;
+        padding: 9px 12px;
+        cursor: pointer;
+    }
+
+    /* File details panel */
+    .file-details-panel {
+        background: var(--bg-tertiary);
+        border-radius: 24px;
+        padding: 24px;
+        margin-bottom: 30px;
+        border: 1px solid var(--border);
+    }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .panel-icon {
+        font-size: 1.2rem;
+    }
+
+    .panel-title {
+        font-weight: 600;
+        flex: 1;
+    }
+
+    .panel-timestamp {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        font-family: monospace;
+    }
+
+    .file-visual {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+    .file-icon-large {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 12px;
+    }
+
+    .file-icon-main {
+        font-size: 5rem;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    .file-type-badge {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        background: var(--primary);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
+
+    .file-name-large {
+        font-size: 1.2rem;
+        font-weight: 600;
+        word-break: break-word;
+    }
+
+    /* Details grid */
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .detail-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .detail-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary);
+    }
+
+    .detail-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--bg-tertiary);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .detail-content {
+        flex: 1;
+    }
+
+    .detail-label {
+        display: block;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+    }
+
+    .detail-value {
+        display: block;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+
+    .detail-sub {
+        display: block;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+    }
+
+    .detail-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+    }
+
+    .badge-security {
+        font-size: 0.6rem;
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+    }
+
+    .detail-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--border);
+    }
+
+    .progress-bar {
+        height: 100%;
+        width: 100%;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+        transition: width 1s ease;
+    }
+
+    .time-indicator {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+    }
+
+    .time-dot {
+        display: block;
+        width: 8px;
+        height: 8px;
+        background: var(--success);
+        border-radius: 50%;
+        animation: timePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes timePulse {
+
+        0%,
+        100% {
+            opacity: 0.5;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 1;
+            transform: scale(1.5);
+        }
+    }
+
+    /* Security summary */
+    .security-summary {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+    }
+
+    .summary-row {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .summary-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .summary-icon {
+        font-size: 1rem;
+    }
+
+    /* Action buttons */
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .decrypt-download-form {
+        display: grid;
+        gap: 10px;
+    }
+
+    .result-key-input {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--bg-tertiary);
+        color: var(--text);
+        font-size: 0.9rem;
+    }
+
+    .result-key-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 16px 24px;
+        border-radius: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s;
+        overflow: hidden;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px var(--primary-glow);
+    }
+
+    .btn-secondary {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        color: var(--text);
+    }
+
+    .btn-secondary:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .btn-large {
+        width: 100%;
+        padding: 20px;
+        font-size: 1.1rem;
+    }
+
+    .btn-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-icon {
+        font-size: 1.2rem;
+        transition: transform 0.3s;
+    }
+
+    .btn-primary:hover .btn-icon {
+        transform: translateY(2px);
+    }
+
+    .btn-glow {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 30% 50%, white, transparent);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .btn-primary:hover .btn-glow {
+        opacity: 0.2;
+    }
+
+    .btn-shine {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.6s;
+    }
+
+    .btn-primary:hover .btn-shine {
+        transform: translateX(100%);
+    }
+
+    /* Additional options */
+    .additional-options {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+    }
+
+    .options-label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .options-list {
+        display: flex;
+        gap: 8px;
+    }
+
+    .option-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 12px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .option-btn:hover {
+        border-color: var(--primary);
+        color: var(--text);
+        transform: translateY(-2px);
+    }
+
+    .option-icon {
+        font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+        .result-card {
+            padding: 24px;
+        }
+
+        .card-title {
+            font-size: 2rem;
+        }
+
+        .details-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .file-name-large {
+            font-size: 1rem;
+        }
+
+        .summary-row {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .additional-options {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .options-list {
+            justify-content: center;
+        }
+    }
+
+    /* Loading state for download */
+    .btn-primary.loading .btn-content {
+        opacity: 0;
+    }
+
+    .btn-primary.loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        border: 2px solid white;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: translate(-50%, -50%) rotate(360deg);
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Create confetti
+        createConfetti();
+
+        // Initialize tooltips
+        initTooltips();
+
+        // Animate progress bars
+        animateProgressBars();
+    });
+
+    // Confetti animation
+    function createConfetti() {
+        const confettiContainer = document.getElementById('confetti');
+        const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
+
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const size = Math.random() * 8 + 4;
+                const left = Math.random() * 100;
+                const delay = Math.random() * 3;
+
+                confetti.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    background: ${color};
+                    border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+                    left: ${left}%;
+                    top: -20px;
+                    opacity: ${Math.random() * 0.7 + 0.3};
+                    animation: confettiFall ${Math.random() * 3 + 2}s linear ${delay}s forwards;
+                    z-index: 1000;
+                `;
+
+                confettiContainer.appendChild(confetti);
+
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }, i * 50);
+        }
+    }
+
+    // Tooltips
+    function initTooltips() {
+        const tooltips = document.querySelectorAll('[data-tooltip]');
+        tooltips.forEach(el => {
+            el.addEventListener('mouseenter', showTooltip);
+            el.addEventListener('mouseleave', hideTooltip);
+        });
+    }
+
+    function showTooltip(e) {
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        tooltip.textContent = e.target.dataset.tooltip;
+        tooltip.style.cssText = `
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            margin-bottom: 8px;
+            z-index: 1000;
+        `;
+        e.target.style.position = 'relative';
+        e.target.appendChild(tooltip);
+    }
+
+    function hideTooltip(e) {
+        const tooltip = e.target.querySelector('.tooltip');
+        if (tooltip) tooltip.remove();
+    }
+
+    // Animate progress bars
+    function animateProgressBars() {
+        const progressBars = document.querySelectorAll('.progress-fill');
+        progressBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 100);
+        });
+    }
+
+    // Handle download with animation
+    function handleDownload(e) {
+        e.preventDefault();
+        const btn = e.currentTarget;
+
+        btn.classList.add('loading');
+
+        setTimeout(() => {
+            window.location.href = btn.href;
+        }, 800);
+
+        setTimeout(() => {
+            btn.classList.remove('loading');
+        }, 1500);
+    }
+
+    function copyGeneratedKey() {
+        const keyEl = document.getElementById('generatedDecryptionKey');
+        if (!keyEl) return;
+
+        navigator.clipboard.writeText(keyEl.textContent.trim()).then(() => {
+            showNotification('Decryption key copied. Store it safely.', 'success');
+        });
+    }
+
+    // Copy file info to clipboard
+    function copyFileInfo() {
+        const fileName = document.querySelector('.file-name-large').textContent;
+        const algorithm = document.querySelector('.detail-card.algorithm-card .detail-value').textContent;
+        const keySize = document.querySelector('.detail-card.keysize-card .detail-value').textContent;
+        const date = document.querySelector('.detail-card.time-card .detail-value').textContent;
+
+        const info = `
+File: ${fileName}
+Algorithm: ${algorithm}
+Key Size: ${keySize}
+Date: ${date}
+        `.trim();
+
+        navigator.clipboard.writeText(info).then(() => {
+            showNotification('File info copied to clipboard!', 'success');
+        });
+    }
+
+    // Share result (simulated)
+    function shareResult() {
+        showNotification('Share link copied to clipboard!', 'info');
+    }
+
+    // Save to vault (simulated)
+    function saveToVault() {
+        showNotification('File saved to vault!', 'success');
+    }
+
+    // Show notification
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 4px solid ${type === 'success' ? '#10b981' : '#6366f1'};
+            padding: 12px 20px;
+            border-radius: 12px;
+            color: var(--text);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        `;
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(100px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes slideOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100px); }
+        }
+        
+        @keyframes confettiFall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

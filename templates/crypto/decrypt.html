@@ -1,0 +1,1605 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="decrypt-page">
+    <!-- Animated background -->
+    <div class="decrypt-particles"></div>
+    <div class="decrypt-grid"></div>
+
+    <div class="decrypt-wrapper">
+        <!-- Header section with decryption animation -->
+        <div class="page-header" data-animate="fade-down">
+            <div class="header-icon-group">
+                <div class="header-icon decrypt-icon">
+                    <span class="icon-lock">🔒</span>
+                    <span class="icon-arrow">→</span>
+                    <span class="icon-unlock">🔓</span>
+                </div>
+                <div class="icon-ring"></div>
+            </div>
+            <h1 class="page-title">
+                <span class="title-word">Decrypt</span>
+                <span class="title-word accent">your files</span>
+            </h1>
+            <p class="page-subtitle">Upload encrypted files and restore them with your decryption key</p>
+
+            <!-- Quick stats -->
+            <div class="quick-stats">
+                <div class="stat-chip">
+                    <span class="stat-icon">🔐</span>
+                    <span class="stat-label">AES-256</span>
+                </div>
+                <div class="stat-chip">
+                    <span class="stat-icon">⚡</span>
+                    <span class="stat-label">ChaCha20</span>
+                </div>
+                <div class="stat-chip">
+                    <span class="stat-icon">🛡️</span>
+                    <span class="stat-label">Zero-knowledge</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main decryption card -->
+        <div class="decrypt-card" data-animate="fade-up">
+            <div class="card-shine"></div>
+
+            <div class="card-header">
+                <h2>Upload encrypted file</h2>
+                <div class="header-badge">
+                    <span class="badge-dot"></span>
+                    <span class="badge-text">Client-side decryption</span>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('crypto.decrypt_upload') }}" enctype="multipart/form-data"
+                id="decryptForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <!-- File upload area with enhanced drop zone -->
+                <div class="upload-area" id="dropZone">
+                    <input type="file" name="file" id="fileInput" required accept="*/*" style="display: none;">
+
+                    <div class="upload-content" id="uploadContent">
+                        <!-- Default state -->
+                        <div class="upload-default" id="uploadDefault">
+                            <div class="upload-icon">
+                                <span class="icon-upload">📤</span>
+                                <span class="icon-glow"></span>
+                            </div>
+                            <div class="upload-text">
+                                <span class="text-primary">Choose a file</span>
+                                <span class="text-secondary">or drag it here</span>
+                            </div>
+                            <div class="upload-hint">
+                                All file types supported
+                            </div>
+                        </div>
+
+                        <!-- File selected state -->
+                        <div class="upload-file-selected" id="uploadSelected" style="display: none;">
+                            <div class="file-preview">
+                                <div class="file-icon">📁</div>
+                                <div class="file-info">
+                                    <span class="file-name" id="selectedFileName"></span>
+                                    <span class="file-meta" id="selectedFileMeta"></span>
+                                </div>
+                                <div class="file-status" id="fileStatus">
+                                    <span class="status-icon">✓</span>
+                                </div>
+                            </div>
+
+                            <!-- File analysis results -->
+                            <div class="file-analysis" id="fileAnalysis" style="display: none;">
+                                <div class="analysis-item">
+                                    <span class="analysis-label">Encryption detected:</span>
+                                    <span class="analysis-value" id="detectedAlgo">Analyzing...</span>
+                                </div>
+                                <div class="analysis-item">
+                                    <span class="analysis-label">File size:</span>
+                                    <span class="analysis-value" id="fileSize"></span>
+                                </div>
+                                <div class="analysis-item">
+                                    <span class="analysis-label">Modified:</span>
+                                    <span class="analysis-value" id="fileModified"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress overlay for file processing -->
+                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                        <div class="progress-ring">
+                            <svg width="60" height="60" viewBox="0 0 60 60">
+                                <circle class="progress-ring-bg" cx="30" cy="30" r="26" />
+                                <circle class="progress-ring-fill" cx="30" cy="30" r="26" stroke-dasharray="163.36"
+                                    stroke-dashoffset="163.36" id="progressRing" />
+                            </svg>
+                            <span class="progress-percent" id="progressPercent">0%</span>
+                        </div>
+                        <span class="progress-text" id="progressText">Processing...</span>
+                    </div>
+                </div>
+
+                <div class="decryption-key-block">
+                    <label for="decryptionKeyInput" class="decryption-key-label">Decryption key</label>
+                    <input type="password" name="decryption_key" id="decryptionKeyInput" class="decryption-key-input"
+                        placeholder="Enter the key generated during encryption" autocomplete="one-time-code" required>
+                    <div class="decryption-key-help">Without this key, the encrypted file cannot be decrypted.</div>
+                </div>
+
+                <!-- Decryption info panel -->
+                <div class="info-panel">
+                    <div class="info-header">
+                        <span class="info-icon">ℹ️</span>
+                        <span class="info-title">About decryption</span>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-step">
+                            <span class="step-number">1</span>
+                            <span class="step-text">Upload your encrypted file</span>
+                        </div>
+                        <div class="info-step">
+                            <span class="step-number">2</span>
+                            <span class="step-text">Enter the generated decryption key</span>
+                        </div>
+                        <div class="info-step">
+                            <span class="step-number">3</span>
+                            <span class="step-text">Key derivation with PBKDF2 + per-file salt</span>
+                        </div>
+                        <div class="info-step">
+                            <span class="step-number">4</span>
+                            <span class="step-text">Decrypt and download original file</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit button with enhanced states -->
+                <button type="submit" class="decrypt-submit-btn" id="submitBtn" disabled>
+                    <span class="btn-content">
+                        <span class="btn-text">Proceed to decryption</span>
+                        <span class="btn-icon">🔓</span>
+                    </span>
+                    <span class="btn-glow"></span>
+                </button>
+            </form>
+
+            <!-- Security notes -->
+            <div class="security-notes">
+                <div class="note-item">
+                    <span class="note-icon">🔑</span>
+                    <span class="note-text">Decryption key is mandatory for every decrypt action</span>
+                </div>
+                <div class="note-item">
+                    <span class="note-icon">⚡</span>
+                    <span class="note-text">Key is verified before decryption is attempted</span>
+                </div>
+                <div class="note-item">
+                    <span class="note-icon">🛡️</span>
+                    <span class="note-text">Without the key, encrypted data cannot be restored</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Your encrypted files reference -->
+        <div class="files-card" data-animate="fade-up" data-delay="200">
+            <div class="files-header">
+                <div class="files-title-group">
+                    <h3>Your encrypted files</h3>
+                    <span class="files-count">{{ files|length }} total</span>
+                </div>
+                <div class="files-filter">
+                    <button class="filter-btn active" onclick="filterFiles('all')">All</button>
+                    <button class="filter-btn" onclick="filterFiles('recent')">Recent</button>
+                </div>
+            </div>
+
+            {% if files %}
+            <div class="files-grid">
+                {% for file in files %}
+                <div class="file-card" data-file-id="{{ file.id }}" data-created="{{ file.created_at }}">
+                    <div class="file-card-header">
+                        <div class="file-type-icon">
+                            {% if file.encryption_algorithm == 'AES' %}
+                            <span class="algo-icon aes">🔐</span>
+                            {% elif file.encryption_algorithm == 'ChaCha20' %}
+                            <span class="algo-icon chacha">⚡</span>
+                            {% else %}
+                            <span class="algo-icon">📁</span>
+                            {% endif %}
+                        </div>
+                        <div class="file-card-info">
+                            <div class="file-original-name" title="{{ file.original_filename }}">
+                                {{ file.original_filename|truncate(25) }}
+                            </div>
+                            <div class="file-encrypted-name" title="{{ file.encrypted_filename }}">
+                                <code>{{ file.encrypted_filename|truncate(20) }}</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="file-card-body">
+                        <div class="file-metadata">
+                            <div class="meta-row">
+                                <span class="meta-label">Algorithm:</span>
+                                <span class="meta-value">
+                                    <span class="algo-badge" style="background: rgba(99, 102, 241, 0.1)">
+                                        {{ file.encryption_algorithm }}/{{ file.cipher_mode }}
+                                    </span>
+                                </span>
+                            </div>
+                            <div class="meta-row">
+                                <span class="meta-label">Created:</span>
+                                <span class="meta-value">{{ file.created_at.strftime('%b %d, %Y') }}</span>
+                            </div>
+                            {% if file.file_size %}
+                            <div class="meta-row">
+                                <span class="meta-label">Size:</span>
+                                <span class="meta-value">{{ (file.file_size / 1024)|round(1) }} KB</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="file-card-footer">
+                        <form method="POST" action="{{ url_for('crypto.process_decryption', file_id=file.id) }}"
+                            class="file-decrypt-form" onsubmit="showDownloadAnimation(this.querySelector('button'))">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="password" name="decryption_key" class="file-decrypt-key-input"
+                                placeholder="Enter decryption key" autocomplete="one-time-code" required>
+                            <button type="submit" class="download-btn">
+                                <span class="btn-icon">↓</span>
+                                <span class="btn-text">Decrypt</span>
+                                <span class="btn-loader" style="display: none;">
+                                    <span class="dot"></span>
+                                    <span class="dot"></span>
+                                    <span class="dot"></span>
+                                </span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📂</div>
+                <div class="empty-text">No encrypted files yet</div>
+                <div class="empty-hint">Files you encrypt will appear here</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Custom properties */
+    .decrypt-page {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-glow: rgba(99, 102, 241, 0.3);
+        --success: #10b981;
+        --warning: #f59e0b;
+        --surface: var(--bg-secondary);
+        --text: var(--text-primary);
+        --text-secondary: var(--text-secondary);
+        --border: var(--border-color);
+
+        min-height: calc(100vh - 80px);
+        padding: 40px 24px;
+        position: relative;
+        overflow-x: hidden;
+    }
+
+    /* Animated background */
+    .decrypt-particles {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+            radial-gradient(circle at 20% 30%, var(--primary-glow) 0%, transparent 30%),
+            radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.2) 0%, transparent 30%);
+        opacity: 0.4;
+        animation: particlesFloat 20s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    @keyframes particlesFloat {
+
+        0%,
+        100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 0.4;
+        }
+
+        50% {
+            transform: scale(1.1) rotate(180deg);
+            opacity: 0.6;
+        }
+    }
+
+    .decrypt-grid {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+            linear-gradient(var(--border) 1px, transparent 1px),
+            linear-gradient(90deg, var(--border) 1px, transparent 1px);
+        background-size: 40px 40px;
+        opacity: 0.05;
+        animation: gridMove 20s linear infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    @keyframes gridMove {
+        0% {
+            transform: translate(0, 0);
+        }
+
+        100% {
+            transform: translate(40px, 40px);
+        }
+    }
+
+    .decrypt-wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 10;
+    }
+
+    /* Page header */
+    .page-header {
+        text-align: center;
+        margin-bottom: 48px;
+    }
+
+    .header-icon-group {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 24px;
+    }
+
+    .header-icon {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 3rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .icon-lock,
+    .icon-unlock {
+        animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    .icon-lock {
+        animation-delay: 0s;
+    }
+
+    .icon-arrow {
+        animation: arrowSlide 2s ease-in-out infinite;
+    }
+
+    .icon-unlock {
+        animation-delay: 1s;
+    }
+
+    @keyframes iconPulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+            filter: drop-shadow(0 0 5px var(--primary-glow));
+        }
+
+        50% {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 15px var(--primary-glow));
+        }
+    }
+
+    @keyframes arrowSlide {
+
+        0%,
+        100% {
+            transform: translateX(0);
+            opacity: 0.5;
+        }
+
+        50% {
+            transform: translateX(10px);
+            opacity: 1;
+        }
+    }
+
+    .icon-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 80px;
+        height: 80px;
+        border: 2px solid var(--primary);
+        border-radius: 50%;
+        animation: ringPulse 2s ease-out infinite;
+    }
+
+    @keyframes ringPulse {
+        0% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0.5;
+        }
+
+        100% {
+            transform: translate(-50%, -50%) scale(1.5);
+            opacity: 0;
+        }
+    }
+
+    .page-title {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .title-word {
+        animation: slideDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+    }
+
+    .title-word:nth-child(1) {
+        animation-delay: 0.2s;
+    }
+
+    .title-word:nth-child(2) {
+        animation-delay: 0.4s;
+    }
+
+    @keyframes slideDown {
+        0% {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .title-word.accent {
+        background: linear-gradient(135deg, var(--primary), #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        margin-bottom: 24px;
+        animation: fadeIn 0.6s ease 0.6s backwards;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Quick stats */
+    .quick-stats {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        animation: fadeIn 0.6s ease 0.8s backwards;
+    }
+
+    .stat-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 30px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        transition: all 0.3s;
+    }
+
+    .stat-chip:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+    }
+
+    .stat-icon {
+        font-size: 1rem;
+    }
+
+    /* Main card */
+    .decrypt-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 32px;
+        padding: 32px;
+        margin-bottom: 32px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
+        animation: cardAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes cardAppear {
+        0% {
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .card-shine {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        animation: shine 3s linear infinite;
+    }
+
+    @keyframes shine {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .card-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .header-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: rgba(99, 102, 241, 0.1);
+        border-radius: 20px;
+        font-size: 0.75rem;
+        color: var(--primary);
+    }
+
+    .badge-dot {
+        width: 6px;
+        height: 6px;
+        background: var(--primary);
+        border-radius: 50%;
+        animation: badgePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes badgePulse {
+
+        0%,
+        100% {
+            opacity: 0.5;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 1;
+            transform: scale(1.5);
+        }
+    }
+
+    /* Upload area */
+    .upload-area {
+        border: 2px dashed var(--border);
+        border-radius: 24px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .upload-area:hover {
+        border-color: var(--primary);
+        background: rgba(99, 102, 241, 0.02);
+    }
+
+    .upload-area.dragover {
+        border-color: var(--primary);
+        background: rgba(99, 102, 241, 0.05);
+        transform: scale(1.02);
+    }
+
+    .upload-content {
+        transition: all 0.3s;
+    }
+
+    .upload-icon {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 16px;
+    }
+
+    .icon-upload {
+        font-size: 3rem;
+        display: inline-block;
+        animation: uploadBounce 2s ease-in-out infinite;
+    }
+
+    @keyframes uploadBounce {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    .icon-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 60px;
+        height: 60px;
+        background: radial-gradient(circle, var(--primary-glow), transparent);
+        border-radius: 50%;
+        animation: glowPulse 2s ease-in-out infinite;
+    }
+
+    .upload-text {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+
+    .text-primary {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .text-secondary {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .upload-hint {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        opacity: 0.7;
+    }
+
+    /* File selected state */
+    .upload-file-selected {
+        animation: fileAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes fileAppear {
+        0% {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .file-preview {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: var(--bg-tertiary);
+        border-radius: 16px;
+        margin-bottom: 16px;
+    }
+
+    .file-icon {
+        font-size: 2rem;
+        animation: fileWiggle 3s ease-in-out infinite;
+    }
+
+    @keyframes fileWiggle {
+
+        0%,
+        100% {
+            transform: rotate(0deg);
+        }
+
+        25% {
+            transform: rotate(5deg);
+        }
+
+        75% {
+            transform: rotate(-5deg);
+        }
+    }
+
+    .file-info {
+        flex: 1;
+        text-align: left;
+    }
+
+    .file-name {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .file-meta {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .file-status {
+        width: 32px;
+        height: 32px;
+        background: var(--success);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        animation: statusPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes statusPop {
+        0% {
+            transform: scale(0);
+        }
+
+        80% {
+            transform: scale(1.2);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* File analysis */
+    .file-analysis {
+        background: var(--bg-tertiary);
+        border-radius: 16px;
+        padding: 16px;
+        text-align: left;
+        animation: analysisSlide 0.5s ease;
+    }
+
+    @keyframes analysisSlide {
+        0% {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .analysis-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .analysis-item:last-child {
+        border-bottom: none;
+    }
+
+    .analysis-label {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+
+    .analysis-value {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    /* Progress overlay */
+    .upload-progress {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--surface);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        animation: progressFade 0.3s ease;
+    }
+
+    @keyframes progressFade {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    .progress-ring {
+        position: relative;
+        width: 60px;
+        height: 60px;
+    }
+
+    .progress-ring-bg {
+        fill: none;
+        stroke: var(--border);
+        stroke-width: 4;
+    }
+
+    .progress-ring-fill {
+        fill: none;
+        stroke: var(--primary);
+        stroke-width: 4;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.3s;
+    }
+
+    .progress-percent {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .progress-text {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .decryption-key-block {
+        margin-bottom: 20px;
+    }
+
+    .decryption-key-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .decryption-key-input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-tertiary);
+        color: var(--text);
+        font-size: 0.9rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .decryption-key-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .decryption-key-help {
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+    }
+
+    /* Info panel */
+    .info-panel {
+        background: var(--bg-tertiary);
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 24px;
+        border-left: 4px solid var(--primary);
+        animation: infoSlide 0.5s ease 0.3s backwards;
+    }
+
+    @keyframes infoSlide {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .info-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .info-title {
+        font-weight: 600;
+    }
+
+    .info-content {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .info-step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+    }
+
+    .step-number {
+        width: 20px;
+        height: 20px;
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
+
+    .step-text {
+        color: var(--text-secondary);
+    }
+
+    /* Submit button */
+    .decrypt-submit-btn {
+        position: relative;
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border: none;
+        border-radius: 16px;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        overflow: hidden;
+        transition: all 0.3s;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .decrypt-submit-btn.active {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .decrypt-submit-btn.active:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px var(--primary-glow);
+    }
+
+    .btn-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-icon {
+        font-size: 1.2rem;
+        transition: transform 0.3s;
+    }
+
+    .decrypt-submit-btn.active:hover .btn-icon {
+        transform: none;
+    }
+
+    .btn-glow {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 30% 50%, white, transparent);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .decrypt-submit-btn.active:hover .btn-glow {
+        opacity: 0.2;
+    }
+
+    /* Security notes */
+    .security-notes {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+    }
+
+    .note-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .note-icon {
+        font-size: 1rem;
+    }
+
+    /* Files card */
+    .files-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 32px;
+        padding: 32px;
+        animation: cardAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
+    }
+
+    .files-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .files-title-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .files-title-group h3 {
+        font-size: 1.3rem;
+        font-weight: 600;
+    }
+
+    .files-count {
+        padding: 2px 8px;
+        background: var(--bg-tertiary);
+        border-radius: 12px;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .files-filter {
+        display: flex;
+        gap: 8px;
+    }
+
+    .filter-btn {
+        padding: 4px 12px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .filter-btn:hover {
+        border-color: var(--primary);
+    }
+
+    .filter-btn.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: white;
+    }
+
+    /* Files grid */
+    .files-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .file-card {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 20px;
+        transition: all 0.3s;
+        animation: fileCardAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        animation-fill-mode: backwards;
+    }
+
+    .file-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--primary);
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+    }
+
+    @keyframes fileCardAppear {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .file-card-header {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .file-type-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--surface);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .file-card-info {
+        flex: 1;
+    }
+
+    .file-original-name {
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .file-encrypted-name code {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        background: var(--surface);
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+
+    .file-metadata {
+        margin-bottom: 16px;
+    }
+
+    .meta-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        font-size: 0.85rem;
+    }
+
+    .meta-label {
+        color: var(--text-secondary);
+    }
+
+    .meta-value {
+        font-weight: 500;
+    }
+
+    .algo-badge {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+    }
+
+    .key-container {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .hidden-key {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        user-select: none;
+    }
+
+    .btn-icon {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    .file-decrypt-form {
+        display: grid;
+        gap: 10px;
+    }
+
+    .file-decrypt-key-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 0.82rem;
+    }
+
+    .file-decrypt-key-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.18);
+    }
+
+    .download-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .download-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .download-btn.loading .btn-text,
+    .download-btn.loading .btn-icon {
+        opacity: 0;
+    }
+
+    .download-btn.loading .btn-loader {
+        display: flex;
+    }
+
+    .btn-loader {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        gap: 4px;
+    }
+
+    .btn-loader .dot {
+        width: 4px;
+        height: 4px;
+        background: var(--primary);
+        border-radius: 50%;
+        animation: dotBounce 0.5s ease-in-out infinite;
+    }
+
+    .btn-loader .dot:nth-child(2) {
+        animation-delay: 0.1s;
+    }
+
+    .btn-loader .dot:nth-child(3) {
+        animation-delay: 0.2s;
+    }
+
+    @keyframes dotBounce {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-4px);
+        }
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 48px;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 16px;
+        opacity: 0.5;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    .empty-text {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+    }
+
+    .empty-hint {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        opacity: 0.7;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 2rem;
+        }
+
+        .quick-stats {
+            flex-wrap: wrap;
+        }
+
+        .info-content {
+            grid-template-columns: 1fr;
+        }
+
+        .security-notes {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .files-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .files-header {
+            flex-direction: column;
+            gap: 12px;
+        }
+    }
+</style>
+
+<script>
+    async function copyKeyText(key, btnElement) {
+        try {
+            await navigator.clipboard.writeText(key);
+            const originalText = btnElement.innerText;
+            btnElement.innerText = '✔️';
+            setTimeout(() => {
+                btnElement.innerText = originalText;
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy key: ', err);
+            alert('Failed to copy key.');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadDefault = document.getElementById('uploadDefault');
+        const uploadSelected = document.getElementById('uploadSelected');
+        const selectedFileName = document.getElementById('selectedFileName');
+        const selectedFileMeta = document.getElementById('selectedFileMeta');
+        const fileAnalysis = document.getElementById('fileAnalysis');
+        const detectedAlgo = document.getElementById('detectedAlgo');
+        const fileSize = document.getElementById('fileSize');
+        const fileModified = document.getElementById('fileModified');
+        const decryptionKeyInput = document.getElementById('decryptionKeyInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressText = document.getElementById('progressText');
+        const progressRing = document.getElementById('progressRing');
+
+        let selectedFile = null;
+
+        function updateSubmitState() {
+            const hasFile = Boolean(selectedFile);
+            const hasKey = Boolean(decryptionKeyInput && decryptionKeyInput.value.trim());
+            const ready = hasFile && hasKey;
+            submitBtn.classList.toggle('active', ready);
+            submitBtn.disabled = !ready;
+        }
+
+        // Drag and drop handlers
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length) handleFileSelect(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFileSelect(e.target.files[0]);
+        });
+        decryptionKeyInput.addEventListener('input', updateSubmitState);
+
+        // File selection handler
+        function handleFileSelect(file) {
+            selectedFile = file;
+
+            // Show selected state with animation
+            uploadDefault.style.display = 'none';
+            uploadSelected.style.display = 'block';
+
+            // Update file info
+            selectedFileName.textContent = file.name;
+
+            // Format file size
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(file.size) / Math.log(1024));
+            const formattedSize = (file.size / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+            selectedFileMeta.textContent = formattedSize;
+
+            // Show file analysis with animation
+            setTimeout(() => {
+                fileAnalysis.style.display = 'block';
+
+                // Detect algorithm from filename or content (simulated)
+                const algo = detectAlgorithm(file.name);
+                detectedAlgo.textContent = algo;
+
+                fileSize.textContent = formattedSize;
+                fileModified.textContent = new Date(file.lastModified).toLocaleDateString();
+
+                // Enable submit only when both file and key are provided
+                updateSubmitState();
+            }, 300);
+
+            // Simulate file analysis progress
+            simulateProgress();
+        }
+
+        // Simulate file analysis progress
+        function simulateProgress() {
+            uploadProgress.style.display = 'flex';
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                if (progress <= 100) {
+                    const circumference = 163.36; // 2 * π * 26
+                    const offset = circumference - (progress / 100) * circumference;
+                    progressRing.style.strokeDashoffset = offset;
+                    progressPercent.textContent = progress + '%';
+
+                    if (progress < 30) progressText.textContent = 'Analyzing file...';
+                    else if (progress < 60) progressText.textContent = 'Detecting algorithm...';
+                    else if (progress < 90) progressText.textContent = 'Verifying integrity...';
+                    else progressText.textContent = 'Ready for decryption';
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        uploadProgress.style.display = 'none';
+                    }, 500);
+                }
+            }, 50);
+        }
+
+        // Detect algorithm from filename
+        function detectAlgorithm(filename) {
+            const lower = filename.toLowerCase();
+            if (lower.includes('aes')) return 'AES-256-CBC';
+            if (lower.includes('chacha')) return 'ChaCha20-Poly1305';
+            if (lower.includes('blowfish')) return 'Blowfish';
+            if (lower.includes('3des')) return 'Triple DES';
+            return 'Unknown (will detect on next step)';
+        }
+
+        // Form submission with loading
+        document.getElementById('decryptForm').addEventListener('submit', function (e) {
+            if (!selectedFile || !decryptionKeyInput.value.trim()) {
+                e.preventDefault();
+                return;
+            }
+
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+        });
+
+        // Download animation
+        window.showDownloadAnimation = function (btn) {
+            btn.classList.add('loading');
+            setTimeout(() => {
+                btn.classList.remove('loading');
+            }, 1500);
+        };
+
+        // Filter files
+        window.filterFiles = function (filter) {
+            const btns = document.querySelectorAll('.filter-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const files = document.querySelectorAll('.file-card');
+            files.forEach(file => {
+                if (filter === 'all') {
+                    file.style.display = 'block';
+                } else if (filter === 'recent') {
+                    const created = new Date(file.dataset.created);
+                    const now = new Date();
+                    const diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+                    file.style.display = diffDays <= 7 ? 'block' : 'none';
+                }
+            });
+        };
+
+        // Stagger file card animations
+        const fileCards = document.querySelectorAll('.file-card');
+        fileCards.forEach((card, index) => {
+            card.style.animationDelay = (index * 0.1) + 's';
+        });
+
+        updateSubmitState();
+    });
+</script>
+{% endblock %}

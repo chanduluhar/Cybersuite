@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% block title %}Threat History — CyberSuite{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header {
+        margin-bottom: 1.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .page-header h1 {
+        font-size: 1.6rem;
+        font-weight: 800;
+    }
+
+    .page-header p {
+        color: var(--muted);
+        font-size: .875rem;
+        margin-top: .2rem;
+    }
+
+    .filter-bar {
+        display: flex;
+        gap: .75rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+        align-items: center;
+    }
+
+    .filter-bar input,
+    .filter-bar select {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: .5rem .85rem;
+        color: var(--text);
+        font-size: .875rem;
+        font-family: inherit;
+        flex: 1;
+        min-width: 160px;
+        transition: border .2s;
+    }
+
+    .filter-bar input:focus,
+    .filter-bar select:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+
+    .filter-bar select option {
+        background: var(--surface);
+    }
+
+    .type-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+    .type-icon i {
+        font-size: .9rem;
+    }
+
+    .entry-target {
+        max-width: 280px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+
+    .risk-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        font-size: .75rem;
+        font-weight: 700;
+        padding: .2rem .6rem;
+        border-radius: 999px;
+    }
+
+    .risk-high {
+        background: rgba(239, 68, 68, .15);
+        color: #f87171;
+    }
+
+    .risk-medium {
+        background: rgba(245, 158, 11, .15);
+        color: #fcd34d;
+    }
+
+    .risk-low {
+        background: rgba(16, 185, 129, .15);
+        color: #34d399;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--muted);
+    }
+
+    .empty-state i {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        opacity: .4;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1><i class="fas fa-clock-rotate-left" style="color:#818cf8;margin-right:.5rem"></i>Threat Scan History</h1>
+        <p>All your previous threat detections — URLs, IPs, files, and hashes.</p>
+    </div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+        <a href="{{ url_for('phishing.export_history') }}" class="btn btn-outline">
+            <i class="fas fa-download"></i> Export CSV
+        </a>
+        <a href="{{ url_for('phishing.scan_url') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Scan
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <!-- Filter Bar -->
+    <form method="GET" action="{{ url_for('phishing.history') }}" class="filter-bar">
+        <input type="text" name="search" placeholder="🔍 Search URL, IP or hash…"
+            value="{{ request.args.get('search', '') }}" id="search-input">
+        <select name="type" id="type-select">
+            <option value="">All Types</option>
+            <option value="url" {% if request.args.get('type')=='url' %}selected{% endif %}>URL</option>
+            <option value="ip" {% if request.args.get('type')=='ip' %}selected{% endif %}>IP Address</option>
+            <option value="file" {% if request.args.get('type')=='file' %}selected{% endif %}>File</option>
+            <option value="hash" {% if request.args.get('type')=='hash' %}selected{% endif %}>Hash</option>
+        </select>
+        <button type="submit" class="btn btn-primary" style="white-space:nowrap">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+        {% if request.args.get('search') or request.args.get('type') %}
+        <a href="{{ url_for('phishing.history') }}" class="btn btn-outline">
+            <i class="fas fa-xmark"></i> Clear
+        </a>
+        {% endif %}
+    </form>
+
+    {% if scans %}
+    <div style="overflow-x:auto">
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Target</th>
+                    <th>Result</th>
+                    <th>Risk Score</th>
+                    <th>Date &amp; Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scan in scans %}
+                <tr>
+                    <td>
+                        <span class="type-icon">
+                            {% if scan.scan_type == 'url' %}
+                            <i class="fas fa-link" style="color:#818cf8"></i> URL
+                            {% elif scan.scan_type == 'ip' %}
+                            <i class="fas fa-globe" style="color:#34d399"></i> IP
+                            {% elif scan.scan_type == 'file' %}
+                            <i class="fas fa-file-code" style="color:#fcd34d"></i> File
+                            {% else %}
+                            <i class="fas fa-hashtag" style="color:#f87171"></i> Hash
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="entry-target" title="{{ scan.input_value }}">{{ scan.input_value }}</span>
+                    </td>
+                    <td>
+                        <span
+                            class="badge badge-{{ 'threat' if scan.result == 'phishing' else scan.result if scan.result in ['safe','unknown','pending'] else 'unknown' }}">
+                            {{ scan.result }}
+                        </span>
+                    </td>
+                    <td>
+                        {% set pct = (scan.risk_score * 100) | int %}
+                        <span
+                            class="risk-pill {% if pct >= 60 %}risk-high{% elif pct >= 30 %}risk-medium{% else %}risk-low{% endif %}">
+                            {{ pct }}%
+                        </span>
+                    </td>
+                    <td style="color:var(--muted);font-size:.82rem">{{ scan.scanned_at.strftime('%d %b %Y · %H:%M') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top:1rem;color:var(--muted);font-size:.8rem">
+        Showing {{ scans|length }} record{{ 's' if scans|length != 1 else '' }}
+        {% if request.args.get('search') or request.args.get('type') %}
+        (filtered) — <a href="{{ url_for('phishing.history') }}" style="color:var(--accent)">Show all</a>
+        {% endif %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-clipboard-list"></i>
+        No scan records found{% if request.args.get('search') or request.args.get('type') %} matching your criteria{%
+        endif %}.
+        <br><br>
+        <a href="{{ url_for('phishing.scan_url') }}" class="btn btn-primary"><i class="fas fa-search"></i> Start
+            Scanning</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

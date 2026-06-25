@@ -1,0 +1,882 @@
+{% extends 'base.html' %}
+{% block title %}Threat Scanner | CyberSuite{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Professional Color Palette */
+    :root {
+        --primary: #6366f1;
+        --primary-light: #818cf8;
+        --primary-dark: #4f46e5;
+        --secondary: #06b6d4;
+        --accent: #8b5cf6;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --surface: #1a1f2e;
+        --surface-light: #242b3f;
+        --text: #f1f5f9;
+        --text-muted: #94a3b8;
+        --border: rgba(99, 102, 241, 0.2);
+    }
+
+    /* Animations */
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    @keyframes glowPulse {
+        0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.2); }
+        50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.4); }
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideInLeft {
+        from { opacity: 0; transform: translateX(-30px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes rotateSlow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes dataStream {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    @keyframes threatPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Main Container */
+    .threat-wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+        position: relative;
+    }
+
+    /* Background Effects */
+    .threat-wrap::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 30%),
+            radial-gradient(circle at 90% 70%, rgba(6, 182, 212, 0.05) 0%, transparent 30%),
+            radial-gradient(circle at 30% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 30%);
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    /* Floating Elements */
+    .floating-element {
+        position: absolute;
+        font-family: monospace;
+        color: rgba(99, 102, 241, 0.1);
+        font-size: 12px;
+        white-space: nowrap;
+        animation: float 10s ease-in-out infinite;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    /* Header Section */
+    .threat-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        animation: slideUp 0.8s ease;
+        position: relative;
+    }
+
+    .header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 1.2rem;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid var(--primary);
+        border-radius: 100px;
+        color: var(--primary-light);
+        font-size: 0.85rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    .header-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        animation: dataStream 3s linear infinite;
+    }
+
+    .header-badge i {
+        color: var(--danger);
+        animation: threatPulse 1.5s ease-in-out infinite;
+    }
+
+    .threat-header h1 {
+        font-size: clamp(2rem, 5vw, 3.2rem);
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 200% 200%;
+        animation: gradientFlow 5s ease infinite;
+    }
+
+    @keyframes gradientFlow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .threat-header p {
+        color: var(--text-muted);
+        max-width: 700px;
+        margin: 0 auto;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        border-left: 3px solid var(--primary);
+        padding-left: 1.5rem;
+        text-align: left;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+        animation: slideUp 1s ease;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 1.2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary), var(--primary));
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--primary);
+        box-shadow: 0 10px 25px -15px var(--primary);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.3rem;
+    }
+
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Threat Grid - 2x2 Layout */
+    .threat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    /* Scan Cards */
+    .scan-card {
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--surface);
+        padding: 2rem 1.5rem;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        animation: scaleIn 0.6s ease;
+        animation-delay: calc(var(--card-index) * 0.1s);
+    }
+
+    .scan-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, transparent, rgba(99, 102, 241, 0.05), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+    }
+
+    .scan-card:hover::before {
+        transform: translateX(100%);
+    }
+
+    .scan-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 40px -20px var(--primary);
+    }
+
+    /* Card-specific gradients on hover */
+    .scan-card.url:hover {
+        border-color: var(--danger);
+        box-shadow: 0 20px 40px -20px var(--danger);
+    }
+
+    .scan-card.ip:hover {
+        border-color: var(--success);
+        box-shadow: 0 20px 40px -20px var(--success);
+    }
+
+    .scan-card.hash:hover {
+        border-color: var(--warning);
+        box-shadow: 0 20px 40px -20px var(--warning);
+    }
+
+    .scan-card.file:hover {
+        border-color: var(--primary);
+        box-shadow: 0 20px 40px -20px var(--primary);
+    }
+
+    /* Scan Icon */
+    .scan-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        font-size: 2rem;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .scan-card:hover .scan-icon {
+        transform: scale(1.1) rotate(360deg);
+    }
+
+    .scan-card.url .scan-icon {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+    }
+
+    .scan-card.url:hover .scan-icon {
+        background: var(--danger);
+        color: white;
+    }
+
+    .scan-card.ip .scan-icon {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+    }
+
+    .scan-card.ip:hover .scan-icon {
+        background: var(--success);
+        color: white;
+    }
+
+    .scan-card.hash .scan-icon {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+    }
+
+    .scan-card.hash:hover .scan-icon {
+        background: var(--warning);
+        color: white;
+    }
+
+    .scan-card.file .scan-icon {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+    }
+
+    .scan-card.file:hover .scan-icon {
+        background: var(--primary);
+        color: white;
+    }
+
+    /* Card Title */
+    .scan-card h2 {
+        font-size: 1.6rem;
+        margin-bottom: 0.75rem;
+        color: var(--text);
+        transition: all 0.3s ease;
+    }
+
+    .scan-card:hover h2 {
+        letter-spacing: 0.5px;
+    }
+
+    /* Card Description */
+    .scan-card p {
+        color: var(--text-muted);
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Feature List */
+    .feature-list {
+        list-style: none;
+        margin: 1.5rem 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+
+    .feature-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem;
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        border-bottom: 1px solid var(--border);
+        animation: slideInLeft 0.5s ease;
+        animation-delay: calc(var(--feature-index) * 0.1s);
+    }
+
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
+
+    .feature-list li i {
+        color: var(--primary);
+        font-size: 0.8rem;
+    }
+
+    .scan-card.url .feature-list li i {
+        color: var(--danger);
+    }
+
+    .scan-card.ip .feature-list li i {
+        color: var(--success);
+    }
+
+    .scan-card.hash .feature-list li i {
+        color: var(--warning);
+    }
+
+    .scan-card.file .feature-list li i {
+        color: var(--primary);
+    }
+
+    /* Tech Tags */
+    .tech-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1.5rem 0;
+    }
+
+    .tech-tag {
+        padding: 0.3rem 1rem;
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        transition: all 0.3s ease;
+    }
+
+    .scan-card.url .tech-tag:hover {
+        border-color: var(--danger);
+        color: var(--danger);
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .scan-card.ip .tech-tag:hover {
+        border-color: var(--success);
+        color: var(--success);
+        background: rgba(16, 185, 129, 0.1);
+    }
+
+    .scan-card.hash .tech-tag:hover {
+        border-color: var(--warning);
+        color: var(--warning);
+        background: rgba(245, 158, 11, 0.1);
+    }
+
+    .scan-card.file .tech-tag:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    /* Buttons */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.8rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+        text-decoration: none;
+        font-size: 1rem;
+    }
+
+    .btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .btn:hover::before {
+        left: 100%;
+    }
+
+    .btn-danger {
+        background: var(--danger);
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px -5px var(--danger);
+    }
+
+    .btn-success {
+        background: var(--success);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px -5px var(--success);
+    }
+
+    .btn-warning {
+        background: var(--warning);
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background: #d97706;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px -5px var(--warning);
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px -5px var(--primary);
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 2px solid var(--warning);
+        color: var(--warning);
+    }
+
+    .btn-outline:hover {
+        background: rgba(245, 158, 11, 0.1);
+        transform: translateY(-2px);
+    }
+
+    /* Info Cards */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 2.5rem 0;
+        animation: slideUp 1.2s ease;
+    }
+
+    .info-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--primary);
+    }
+
+    .info-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin: 0 auto 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .info-card:hover .info-icon {
+        transform: scale(1.1) rotate(360deg);
+        background: var(--primary);
+        color: white;
+    }
+
+    .info-card h4 {
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    .info-card p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    /* Footer */
+    .threat-footer {
+        margin-top: 2rem;
+        text-align: center;
+        padding: 1.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        color: var(--text-muted);
+        font-size: 1rem;
+        animation: slideUp 1.4s ease;
+    }
+
+    .threat-footer a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .threat-footer a::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: var(--primary);
+        transition: width 0.3s ease;
+    }
+
+    .threat-footer a:hover::after {
+        width: 100%;
+    }
+
+    .threat-footer a:hover {
+        color: var(--secondary);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .info-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .threat-header p {
+            text-align: center;
+            border-left: none;
+            padding-left: 0;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .threat-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .threat-footer {
+            border-radius: 20px;
+        }
+
+        .feature-list {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Reveal Animation */
+    .reveal {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .reveal.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Floating Background Elements -->
+<div class="floating-element" style="top: 10%; left: 5%; animation-delay: 0s;">0x7F4B3A2C</div>
+<div class="floating-element" style="top: 20%; right: 5%; animation-delay: 2s;">MALWARE_DETECTED</div>
+<div class="floating-element" style="bottom: 15%; left: 10%; animation-delay: 4s;">PHISHING_ALERT</div>
+<div class="floating-element" style="bottom: 25%; right: 8%; animation-delay: 1s;">THREAT_INTEL</div>
+
+<section class="threat-wrap">
+    <!-- Header Section -->
+    <div class="threat-header reveal">
+        <div class="header-badge">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>LIVE THREAT DETECTION</span>
+            <i class="fas fa-radar"></i>
+        </div>
+        <h1>Threat Intelligence Scanner</h1>
+        <p>Advanced threat detection powered by machine learning and multiple threat intelligence feeds. Scan URLs, IPs, file hashes, and uploaded files for malicious indicators.</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid reveal">
+        <div class="stat-card">
+            <div class="stat-value">1,234</div>
+            <div class="stat-label">Total Scans</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">356</div>
+            <div class="stat-label">Threats Found</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">99.9%</div>
+            <div class="stat-label">Detection Rate</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">50ms</div>
+            <div class="stat-label">Avg Response</div>
+        </div>
+    </div>
+
+    <!-- Scan Cards Grid - 2x2 Layout -->
+    <div class="threat-grid">
+        <!-- URL Scan Card -->
+        <article class="scan-card url" style="--card-index: 0">
+            <div class="scan-icon"><i class="fas fa-link"></i></div>
+            <h2>URL Scanner</h2>
+            <p>Detect phishing, malware, and malicious URLs using ML models and real-time threat intelligence.</p>
+            
+            <ul class="feature-list">
+                <li style="--feature-index: 0"><i class="fas fa-check-circle"></i> Phishing detection</li>
+                <li style="--feature-index: 1"><i class="fas fa-check-circle"></i> Domain reputation</li>
+                <li style="--feature-index: 2"><i class="fas fa-check-circle"></i> SSL validation</li>
+                <li style="--feature-index: 3"><i class="fas fa-check-circle"></i> Safe Browsing API</li>
+            </ul>
+
+            <div class="tech-tags">
+                <span class="tech-tag">TensorFlow</span>
+                <span class="tech-tag">VirusTotal</span>
+            </div>
+
+            <a href="{{ url_for('phishing.scan_url') }}" class="btn btn-danger">
+                <i class="fas fa-search"></i> Scan URL Now
+            </a>
+        </article>
+
+        <!-- IP Scan Card -->
+        <article class="scan-card ip" style="--card-index: 1">
+            <div class="scan-icon"><i class="fas fa-globe"></i></div>
+            <h2>IP Scanner</h2>
+            <p>Check IP reputation, abuse scores, and geolocation data against multiple threat feeds.</p>
+            
+            <ul class="feature-list">
+                <li style="--feature-index: 0"><i class="fas fa-check-circle"></i> AbuseIPDB check</li>
+                <li style="--feature-index: 1"><i class="fas fa-check-circle"></i> VirusTotal</li>
+                <li style="--feature-index: 2"><i class="fas fa-check-circle"></i> Geolocation data</li>
+                <li style="--feature-index: 3"><i class="fas fa-check-circle"></i> Blacklist check</li>
+            </ul>
+
+            <div class="tech-tags">
+                <span class="tech-tag">AbuseIPDB</span>
+                <span class="tech-tag">GeoIP</span>
+            </div>
+
+            <a href="{{ url_for('phishing.scan_ip') }}" class="btn btn-success">
+                <i class="fas fa-shield-halved"></i> Scan IP Now
+            </a>
+        </article>
+
+        <!-- Hash Scan Card -->
+        <article class="scan-card hash" style="--card-index: 2">
+            <div class="scan-icon"><i class="fas fa-fingerprint"></i></div>
+            <h2>Hash Scanner</h2>
+            <p>Analyze MD5, SHA1, SHA256 hashes against 50+ antivirus engines and threat databases.</p>
+            
+            <ul class="feature-list">
+                <li style="--feature-index: 0"><i class="fas fa-check-circle"></i> Multi-AV scanning</li>
+                <li style="--feature-index: 1"><i class="fas fa-check-circle"></i> Malware detection</li>
+                <li style="--feature-index: 2"><i class="fas fa-check-circle"></i> Threat assessment</li>
+                <li style="--feature-index: 3"><i class="fas fa-check-circle"></i> Historical data</li>
+            </ul>
+
+            <div class="tech-tags">
+                <span class="tech-tag">MD5</span>
+                <span class="tech-tag">SHA256</span>
+            </div>
+
+            <a href="{{ url_for('phishing.scan_hash') }}" class="btn btn-outline">
+                <i class="fas fa-hashtag"></i> Scan Hash Now
+            </a>
+        </article>
+
+        <!-- File Scan Card -->
+        <article class="scan-card file" style="--card-index: 3">
+            <div class="scan-icon"><i class="fas fa-file-shield"></i></div>
+            <h2>File Scanner</h2>
+            <p>Upload and scan files for malware, viruses, and suspicious indicators with deep analysis.</p>
+            
+            <ul class="feature-list">
+                <li style="--feature-index: 0"><i class="fas fa-check-circle"></i> 50+ AV engines</li>
+                <li style="--feature-index: 1"><i class="fas fa-check-circle"></i> Behavior analysis</li>
+                <li style="--feature-index: 2"><i class="fas fa-check-circle"></i> Metadata extraction</li>
+                <li style="--feature-index: 3"><i class="fas fa-check-circle"></i> Detailed report</li>
+            </ul>
+
+            <div class="tech-tags">
+                <span class="tech-tag">YARA</span>
+                <span class="tech-tag">ClamAV</span>
+            </div>
+
+            <a href="{{ url_for('phishing.scan_file') }}" class="btn btn-primary">
+                <i class="fas fa-file-arrow-up"></i> Upload & Scan
+            </a>
+        </article>
+    </div>
+
+    <!-- Information Cards -->
+    <div class="info-grid reveal">
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-brain"></i></div>
+            <h4>ML-Powered Detection</h4>
+            <p>Advanced machine learning models trained on millions of threats.</p>
+        </div>
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-clock"></i></div>
+            <h4>Real-Time Analysis</h4>
+            <p>Get results in milliseconds with optimized scanning engine.</p>
+        </div>
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-history"></i></div>
+            <h4>Full Audit Trail</h4>
+            <p>All scans logged with detailed results for compliance.</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="threat-footer reveal">
+        <i class="fas fa-history" style="margin-right: 0.5rem; color: var(--primary);"></i>
+        Need previous results? Check your 
+        <a href="{{ url_for('phishing.history') }}">scan history</a> 
+        for detailed reports.
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Scroll reveal animation
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    reveals.forEach(el => observer.observe(el));
+
+    // Hover effect
+    document.querySelectorAll('.scan-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        });
+    });
+
+    // Threat pulse animation
+    setInterval(() => {
+        const badge = document.querySelector('.header-badge i');
+        if (badge) {
+            badge.style.animation = 'none';
+            setTimeout(() => {
+                badge.style.animation = 'threatPulse 1.5s ease-in-out infinite';
+            }, 100);
+        }
+    }, 5000);
+</script>
+{% endblock %}

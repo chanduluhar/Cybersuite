@@ -1,0 +1,914 @@
+{% extends 'base.html' %}
+{% block title %}File Vault | CyberSuite{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Professional Color Palette */
+    :root {
+        --primary: #6366f1;
+        --primary-light: #818cf8;
+        --primary-dark: #4f46e5;
+        --secondary: #06b6d4;
+        --accent: #8b5cf6;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --surface: #1a1f2e;
+        --surface-light: #242b3f;
+        --text: #f1f5f9;
+        --text-muted: #94a3b8;
+        --border: rgba(99, 102, 241, 0.2);
+    }
+
+    /* Animations */
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    @keyframes glowPulse {
+        0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+        50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
+    }
+
+    @keyframes glowPulseBlue {
+        0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+        50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.6); }
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideInLeft {
+        from { opacity: 0; transform: translateX(-30px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideInRight {
+        from { opacity: 0; transform: translateX(30px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes rotateSlow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes dataStream {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    @keyframes encryptPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    @keyframes keyShake {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(10deg); }
+        75% { transform: rotate(-10deg); }
+    }
+
+    @keyframes borderGlow {
+        0%, 100% { border-color: rgba(16, 185, 129, 0.3); }
+        50% { border-color: rgba(16, 185, 129, 0.8); }
+    }
+
+    @keyframes borderGlowBlue {
+        0%, 100% { border-color: rgba(99, 102, 241, 0.3); }
+        50% { border-color: rgba(99, 102, 241, 0.8); }
+    }
+
+    /* Main Container */
+    .vault-wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+        position: relative;
+    }
+
+    /* Background Effects */
+    .vault-wrap::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.05) 0%, transparent 30%),
+            radial-gradient(circle at 80% 70%, rgba(99, 102, 241, 0.05) 0%, transparent 30%),
+            radial-gradient(circle at 40% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 30%);
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    /* Floating Encryption Elements */
+    .floating-element {
+        position: absolute;
+        font-family: monospace;
+        color: rgba(16, 185, 129, 0.1);
+        font-size: 14px;
+        white-space: nowrap;
+        animation: float 12s ease-in-out infinite;
+        pointer-events: none;
+        z-index: -1;
+        font-weight: bold;
+    }
+
+    .floating-element.blue {
+        color: rgba(99, 102, 241, 0.1);
+    }
+
+    /* Header Section */
+    .vault-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        animation: slideUp 0.8s ease;
+        position: relative;
+    }
+
+    .header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1.5rem;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--success);
+        border-radius: 100px;
+        color: var(--success);
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    .header-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        animation: dataStream 3s linear infinite;
+    }
+
+    .header-badge i {
+        color: var(--success);
+        animation: encryptPulse 1.5s ease-in-out infinite;
+    }
+
+    .vault-header h1 {
+        font-size: clamp(2.2rem, 5vw, 3.2rem);
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, var(--success), var(--primary), var(--accent));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 200% 200%;
+        animation: gradientFlow 5s ease infinite;
+    }
+
+    @keyframes gradientFlow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .vault-header p {
+        color: var(--text-muted);
+        max-width: 700px;
+        margin: 0 auto;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        border-left: 3px solid var(--success);
+        padding-left: 1.5rem;
+        text-align: left;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+        animation: slideUp 1s ease;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 1.2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--success), var(--primary), var(--success));
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--success);
+        box-shadow: 0 10px 25px -15px var(--success);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--success);
+        margin-bottom: 0.3rem;
+    }
+
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Vault Grid */
+    .vault-grid {
+        display: grid;
+        gap: 2rem;
+        grid-template-columns: repeat(2, 1fr);
+        margin-bottom: 2.5rem;
+    }
+
+    /* Vault Cards */
+    .vault-card {
+        border: 2px solid var(--border);
+        border-radius: 32px;
+        background: var(--surface);
+        padding: 2.5rem 2rem;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        animation: scaleIn 0.6s ease;
+        animation-delay: calc(var(--card-index) * 0.2s);
+    }
+
+    .vault-card.encrypt {
+        border-color: rgba(16, 185, 129, 0.3);
+        animation: borderGlow 3s ease-in-out infinite;
+    }
+
+    .vault-card.decrypt {
+        border-color: rgba(99, 102, 241, 0.3);
+        animation: borderGlowBlue 3s ease-in-out infinite;
+    }
+
+    .vault-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, transparent, rgba(16, 185, 129, 0.05), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+    }
+
+    .vault-card.decrypt::before {
+        background: linear-gradient(135deg, transparent, rgba(99, 102, 241, 0.05), transparent);
+    }
+
+    .vault-card:hover::before {
+        transform: translateX(100%);
+    }
+
+    .vault-card:hover {
+        transform: translateY(-10px) scale(1.02);
+    }
+
+    .vault-card.encrypt:hover {
+        box-shadow: 0 30px 50px -25px var(--success);
+    }
+
+    .vault-card.decrypt:hover {
+        box-shadow: 0 30px 50px -25px var(--primary);
+    }
+
+    /* Card Icon */
+    .vault-card .icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .vault-card.encrypt .icon {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--success);
+        animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    .vault-card.decrypt .icon {
+        background: rgba(99, 102, 241, 0.15);
+        color: var(--primary);
+        animation: glowPulseBlue 3s ease-in-out infinite;
+    }
+
+    .vault-card:hover .icon {
+        transform: scale(1.1) rotate(360deg);
+    }
+
+    .vault-card.encrypt:hover .icon {
+        background: var(--success);
+        color: white;
+    }
+
+    .vault-card.decrypt:hover .icon {
+        background: var(--primary);
+        color: white;
+    }
+
+    /* Card Title */
+    .vault-card h2 {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+        color: var(--text);
+        transition: all 0.3s ease;
+    }
+
+    .vault-card:hover h2 {
+        letter-spacing: 1px;
+    }
+
+    .vault-card.encrypt h2 {
+        color: var(--success);
+    }
+
+    .vault-card.decrypt h2 {
+        color: var(--primary);
+    }
+
+    /* Card Description */
+    .vault-card p {
+        color: var(--text-muted);
+        font-size: 1rem;
+        line-height: 1.7;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Algorithm Tags */
+    .algorithm-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1.5rem 0;
+    }
+
+    .algo-tag {
+        padding: 0.4rem 1rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-family: monospace;
+        transition: all 0.3s ease;
+    }
+
+    .vault-card.encrypt .algo-tag:hover {
+        border-color: var(--success);
+        color: var(--success);
+        background: rgba(16, 185, 129, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .vault-card.decrypt .algo-tag:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.1);
+        transform: translateY(-2px);
+    }
+
+    /* Features List */
+    .features-list {
+        list-style: none;
+        margin: 1.5rem 0;
+        padding: 0;
+    }
+
+    .features-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.6rem 0;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        border-bottom: 1px solid var(--border);
+        animation: slideInLeft 0.5s ease;
+        animation-delay: calc(var(--feature-index) * 0.1s);
+    }
+
+    .features-list li:last-child {
+        border-bottom: none;
+    }
+
+    .features-list li i {
+        font-size: 0.9rem;
+    }
+
+    .vault-card.encrypt .features-list li i {
+        color: var(--success);
+    }
+
+    .vault-card.decrypt .features-list li i {
+        color: var(--primary);
+    }
+
+    /* Buttons */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        border-radius: 16px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+        text-decoration: none;
+    }
+
+    .btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .btn:hover::before {
+        left: 100%;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, var(--success), #059669);
+        color: white;
+    }
+
+    .btn-success:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px -10px var(--success);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px -10px var(--primary);
+    }
+
+    /* Info Cards */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 2.5rem 0;
+        animation: slideUp 1.2s ease;
+    }
+
+    .info-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--success);
+    }
+
+    .info-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 18px;
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin: 0 auto 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .info-card:hover .info-icon {
+        transform: scale(1.1) rotate(360deg);
+        background: var(--success);
+        color: white;
+    }
+
+    .info-card h4 {
+        color: var(--text);
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    .info-card p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    /* Recent Activity Section */
+    .recent-section {
+        margin: 2.5rem 0;
+        padding: 2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 32px;
+        animation: slideUp 1.3s ease;
+    }
+
+    .recent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .recent-header h3 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text);
+        font-size: 1.2rem;
+    }
+
+    .recent-header h3 i {
+        color: var(--success);
+    }
+
+    .recent-header a {
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .recent-header a:hover {
+        color: var(--success);
+        transform: translateX(3px);
+    }
+
+    .recent-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+        transition: all 0.3s ease;
+    }
+
+    .recent-item:last-child {
+        border-bottom: none;
+    }
+
+    .recent-item:hover {
+        background: rgba(16, 185, 129, 0.05);
+        border-radius: 12px;
+        padding-left: 1.5rem;
+    }
+
+    .recent-info {
+        flex: 1;
+    }
+
+    .recent-name {
+        color: var(--text);
+        font-weight: 500;
+        margin-bottom: 0.2rem;
+    }
+
+    .recent-meta {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        display: flex;
+        gap: 1rem;
+    }
+
+    .recent-badge {
+        padding: 0.2rem 1rem;
+        border-radius: 100px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .badge-encrypt {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .badge-decrypt {
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    /* Footer */
+    .vault-footer {
+        margin-top: 2rem;
+        text-align: center;
+        padding: 1.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        color: var(--text-muted);
+        font-size: 1rem;
+        animation: slideUp 1.4s ease;
+    }
+
+    .vault-footer a {
+        color: var(--success);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .vault-footer a::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: var(--success);
+        transition: width 0.3s ease;
+    }
+
+    .vault-footer a:hover::after {
+        width: 100%;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .info-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .vault-header p {
+            text-align: center;
+            border-left: none;
+            padding-left: 0;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .vault-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .vault-footer {
+            border-radius: 20px;
+        }
+    }
+
+    /* Reveal Animation */
+    .reveal {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .reveal.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Floating Encryption Elements -->
+<div class="floating-element" style="top: 15%; left: 5%; animation-delay: 0s;">AES-256</div>
+<div class="floating-element blue" style="top: 25%; right: 8%; animation-delay: 2s;">ChaCha20</div>
+<div class="floating-element" style="bottom: 20%; left: 10%; animation-delay: 4s;">3DES</div>
+<div class="floating-element blue" style="bottom: 30%; right: 5%; animation-delay: 1s;">Blowfish</div>
+<div class="floating-element" style="top: 40%; left: 15%; animation-delay: 3s;">RSA-2048</div>
+
+<section class="vault-wrap">
+    <!-- Header Section -->
+    <div class="vault-header reveal">
+        <div class="header-badge">
+            <i class="fas fa-shield-halved"></i>
+            <span>MILITARY-GRADE ENCRYPTION</span>
+            <i class="fas fa-lock"></i>
+        </div>
+        <h1>Secure File Vault</h1>
+        <p>Protect your sensitive files with AES-256, ChaCha20, and other military-grade encryption algorithms. Secure sharing with time-limited access tokens.</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid reveal">
+        <div class="stat-card">
+            <div class="stat-value">1,234</div>
+            <div class="stat-label">Files Encrypted</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">892</div>
+            <div class="stat-label">Files Decrypted</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">256-bit</div>
+            <div class="stat-label">Max Strength</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">99.9%</div>
+            <div class="stat-label">Success Rate</div>
+        </div>
+    </div>
+
+    <!-- Main Vault Cards -->
+    <div class="vault-grid">
+        <!-- Encryption Card -->
+        <article class="vault-card encrypt" style="--card-index: 0">
+            <div class="icon"><i class="fas fa-lock"></i></div>
+            <h2>Encryption</h2>
+            <p>Secure your files with industry-standard encryption algorithms. Perfect for sensitive documents, personal data, and confidential information.</p>
+            
+            <div class="algorithm-tags">
+                <span class="algo-tag">AES-256-GCM</span>
+                <span class="algo-tag">ChaCha20-Poly1305</span>
+                <span class="algo-tag">Blowfish</span>
+                <span class="algo-tag">3DES</span>
+                <span class="algo-tag">DES</span>
+            </div>
+
+            <ul class="features-list">
+                <li style="--feature-index: 0"><i class="fas fa-check-circle"></i> Military-grade AES-256 encryption</li>
+                <li style="--feature-index: 1"><i class="fas fa-check-circle"></i> ChaCha20-Poly1305 for mobile optimization</li>
+                <li style="--feature-index: 2"><i class="fas fa-check-circle"></i> Secure key generation & management</li>
+                <li style="--feature-index: 3"><i class="fas fa-check-circle"></i> Password-based encryption (PBKDF2)</li>
+                <li style="--feature-index: 4"><i class="fas fa-check-circle"></i> File integrity verification with SHA-256</li>
+            </ul>
+
+            <a href="{{ url_for('crypto.upload') }}" class="btn btn-success">
+                <i class="fas fa-lock"></i> Start Encryption
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </article>
+
+        <!-- Decryption Card -->
+        <article class="vault-card decrypt" style="--card-index: 1">
+            <div class="icon"><i class="fas fa-unlock-keyhole"></i></div>
+            <h2>Decryption</h2>
+            <p>Restore your encrypted files securely using the generated decryption key. Supports all encryption algorithms with automatic detection.</p>
+            
+            <div class="algorithm-tags">
+                <span class="algo-tag">AES-256</span>
+                <span class="algo-tag">ChaCha20</span>
+                <span class="algo-tag">Blowfish</span>
+                <span class="algo-tag">3DES</span>
+                <span class="algo-tag">Auto-Detect</span>
+            </div>
+
+            <ul class="features-list">
+                <li style="--feature-index: 0"><i class="fas fa-check-circle"></i> Automatic algorithm detection</li>
+                <li style="--feature-index: 1"><i class="fas fa-check-circle"></i> Key-based decryption</li>
+                <li style="--feature-index: 2"><i class="fas fa-check-circle"></i> Password-based decryption</li>
+                <li style="--feature-index: 3"><i class="fas fa-check-circle"></i> Integrity verification</li>
+                <li style="--feature-index: 4"><i class="fas fa-check-circle"></i> Secure temporary file handling</li>
+            </ul>
+
+            <a href="{{ url_for('crypto.decrypt_page') }}" class="btn btn-primary">
+                <i class="fas fa-key"></i> Start Decryption
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </article>
+    </div>
+
+    <!-- Features Info Cards -->
+    <div class="info-grid reveal">
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-shield-halved"></i></div>
+            <h4>Secure Sharing</h4>
+            <p>Share encrypted files with time-limited access tokens and email delivery.</p>
+        </div>
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-key"></i></div>
+            <h4>Key Management</h4>
+            <p>Secure key storage with backup options and recovery mechanisms.</p>
+        </div>
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-history"></i></div>
+            <h4>Audit Trail</h4>
+            <p>Complete history of all encryption and decryption operations.</p>
+        </div>
+    </div>
+
+    
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Scroll reveal animation
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    reveals.forEach(el => observer.observe(el));
+
+    // Hover effects
+    document.querySelectorAll('.vault-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        });
+    });
+
+    // Key animation on decrypt card
+    setInterval(() => {
+        const decryptIcon = document.querySelector('.vault-card.decrypt .icon i');
+        if (decryptIcon) {
+            decryptIcon.style.animation = 'keyShake 0.5s ease-in-out';
+            setTimeout(() => {
+                decryptIcon.style.animation = '';
+            }, 500);
+        }
+    }, 4000);
+
+    // Counter animation for stats
+    document.querySelectorAll('.stat-value').forEach(el => {
+        const text = el.textContent;
+        if (text.includes('bit') || text.includes('%') || text.includes('ms')) return;
+        
+        const target = parseInt(text.replace(/[^0-9]/g, ''), 10);
+        if (!target || isNaN(target)) return;
+        
+        let current = 0;
+        const increment = target / 50;
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                el.textContent = target.toLocaleString();
+                clearInterval(timer);
+            } else {
+                el.textContent = Math.floor(current).toLocaleString();
+            }
+        }, 20);
+    });
+</script>
+{% endblock %}

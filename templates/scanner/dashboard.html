@@ -1,0 +1,1327 @@
+{% extends 'base.html' %}
+{% block title %}Port Scanner | CyberSuite{% endblock %}
+
+{% block extra_head %}
+    <style>
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0c0f 0%, #11151c 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* ===== CYBER BACKGROUND WITH ANIMATIONS ===== */
+        .cyber-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .matrix-rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg,
+                    rgba(0, 255, 245, 0.02) 0px,
+                    transparent 1px,
+                    transparent 3px);
+            animation: matrix 20s linear infinite;
+            pointer-events: none;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 255, 245, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 245, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: grid 15s linear infinite;
+            pointer-events: none;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(0, 255, 245, 0.3),
+                    rgba(157, 0, 255, 0.3),
+                    transparent);
+            animation: scan 4s linear infinite;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .floating-elements>div {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.05;
+            animation: float 20s linear infinite;
+            color: #00fff5;
+        }
+
+        .floating-shield {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-lock {
+            top: 60%;
+            right: 15%;
+            animation-delay: 5s;
+        }
+
+        .floating-globe {
+            bottom: 30%;
+            left: 20%;
+            animation-delay: 10s;
+        }
+
+        .floating-binary {
+            top: 40%;
+            right: 25%;
+            animation-delay: 15s;
+            font-size: 3rem;
+        }
+
+        .floating-scan {
+            bottom: 20%;
+            right: 30%;
+            animation-delay: 7s;
+        }
+
+        /* ===== KEYFRAMES ===== */
+        @keyframes matrix {
+            0% {
+                transform: translateY(-100%);
+            }
+
+            100% {
+                transform: translateY(100%);
+            }
+        }
+
+        @keyframes grid {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        @keyframes scan {
+            0% {
+                top: -2px;
+            }
+
+            100% {
+                top: 100%;
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.05;
+            }
+
+            25% {
+                transform: translateY(-20px) rotate(5deg);
+                opacity: 0.08;
+            }
+
+            75% {
+                transform: translateY(20px) rotate(-5deg);
+                opacity: 0.08;
+            }
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.9;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ===== CONTAINER ===== */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* ===== MINIMALIST NAVBAR STYLES ===== */
+        .minimal-nav {
+            background: rgba(10, 12, 15, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 255, 245, 0.15);
+            padding: 0.8rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .minimal-nav:hover {
+            border-bottom-color: rgba(0, 255, 245, 0.3);
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.3rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .logo-container:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .logo-image {
+            width: 38px;
+            height: 38px;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .logo-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-main {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-sub {
+            font-size: 0.6rem;
+            color: #00fff5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            color: #b0b0b0;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border: 1px solid transparent;
+        }
+
+        .nav-link i {
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-color: rgba(0, 255, 245, 0.2);
+        }
+
+        .nav-link.active {
+            background: rgba(0, 255, 245, 0.08);
+            color: #00fff5;
+            border-color: rgba(0, 255, 245, 0.3);
+        }
+
+        .nav-link.active i {
+            color: #00fff5;
+        }
+
+        .admin-link {
+            background: rgba(255, 215, 0, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .admin-link:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: rgba(255, 215, 0, 0.4);
+        }
+
+        .admin-badge {
+            background: #ffd700;
+            color: #0a0c0f;
+            font-size: 0.6rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            margin-left: 0.3rem;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.3rem 0.3rem 0.3rem 1.2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .user-info:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(0, 255, 245, 0.2);
+        }
+
+        .user-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-greeting {
+            font-size: 0.65rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #00fff5;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1rem;
+            border: 1px solid rgba(0, 255, 245, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            border-color: #00fff5;
+            transform: scale(1.05);
+        }
+
+        .logout-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 0, 85, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff6b6b;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 0, 85, 0.2);
+            margin-left: 0.3rem;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 0, 85, 0.2);
+            color: #ff0055;
+            transform: scale(1.05);
+            border-color: rgba(255, 0, 85, 0.4);
+        }
+
+        /* ===== SCAN SECTION ===== */
+        .scan-section {
+            background: rgba(26, 30, 36, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 245, 0.1);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            margin: 2rem 0;
+            text-align: center;
+            animation: slideInUp 0.5s ease;
+        }
+
+        .scan-section h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #00fff5, #9d00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .scan-section p {
+            color: #b0b0b0;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        /* ===== SCAN MODE SELECTOR ===== */
+        .scan-mode-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(10, 12, 15, 0.5);
+            border: 1px solid rgba(0, 255, 245, 0.1);
+            border-radius: 15px;
+        }
+
+        .mode-label {
+            color: #00fff5;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            background: rgba(0, 255, 245, 0.05);
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            border-radius: 30px;
+            padding: 0.8rem 1.5rem;
+            color: #b0b0b0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .mode-btn i {
+            font-size: 1rem;
+            color: #00fff5;
+        }
+
+        .mode-btn:hover {
+            background: rgba(0, 255, 245, 0.1);
+            border-color: rgba(0, 255, 245, 0.4);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #00fff5, #9d00ff);
+            color: #0a0c0f;
+            border-color: transparent;
+        }
+
+        .mode-btn.active i {
+            color: #0a0c0f;
+        }
+
+        /* ===== SCAN INPUT GROUP ===== */
+        .scan-input-group {
+            display: flex;
+            max-width: 600px;
+            margin: 0 auto;
+            gap: 1rem;
+        }
+
+        .scan-input-group input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: rgba(10, 12, 15, 0.8);
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            border-radius: 30px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .scan-input-group input:focus {
+            outline: none;
+            border-color: #00fff5;
+            box-shadow: 0 0 30px rgba(0, 255, 245, 0.3);
+        }
+
+        .btn-primary {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #00fff5, #9d00ff);
+            border: none;
+            border-radius: 30px;
+            color: #0a0c0f;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 255, 245, 0.5);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== SCAN INFO BADGES ===== */
+        .scan-info {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .info-badge {
+            background: rgba(0, 255, 245, 0.05);
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            color: #b0b0b0;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-badge i {
+            color: #00fff5;
+        }
+
+        /* ===== STATS CARDS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: rgba(26, 30, 36, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 245, 0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 255, 245, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, rgba(0, 255, 245, 0.1), rgba(157, 0, 255, 0.1));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #00fff5;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #00fff5;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* ===== SCAN RESULTS ===== */
+        .scan-results {
+            margin: 2rem 0;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .results-header h3 {
+            color: #00fff5;
+            font-size: 1.5rem;
+        }
+
+        .scan-summary {
+            display: flex;
+            gap: 2rem;
+            padding: 1rem;
+            background: rgba(0, 255, 245, 0.05);
+            border: 1px solid rgba(0, 255, 245, 0.1);
+            border-radius: 15px;
+            flex-wrap: wrap;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #b0b0b0;
+        }
+
+        .summary-item span:first-child {
+            font-weight: 500;
+        }
+
+        .summary-value {
+            font-weight: 700;
+            color: #00fff5;
+        }
+
+        .ports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .port-card {
+            background: rgba(26, 30, 36, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 245, 0.1);
+            border-radius: 15px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+            animation: slideInUp 0.3s ease;
+        }
+
+        .port-card:hover {
+            transform: translateX(5px);
+            border-color: rgba(0, 255, 245, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .port-card.open {
+            border-left: 4px solid #00ff88;
+        }
+
+        .port-card.closed {
+            border-left: 4px solid #ff0055;
+            opacity: 0.85;
+        }
+
+        .port-card.filtered {
+            border-left: 4px solid #ffaa00;
+            opacity: 0.75;
+        }
+
+        .port-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .port-number {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #00fff5;
+        }
+
+        .port-protocol {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            background: rgba(0, 255, 245, 0.1);
+            color: #00fff5;
+        }
+
+        .port-state {
+            font-size: 0.8rem;
+            padding: 0.2rem 0.8rem;
+            border-radius: 15px;
+            font-weight: 600;
+        }
+
+        .state-open {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+            border: 1px solid #00ff88;
+        }
+
+        .state-closed {
+            background: rgba(255, 0, 85, 0.1);
+            color: #ff0055;
+            border: 1px solid #ff0055;
+        }
+
+        .state-filtered {
+            background: rgba(255, 170, 0, 0.1);
+            color: #ffaa00;
+            border: 1px solid #ffaa00;
+        }
+
+        .port-service {
+            font-size: 0.9rem;
+            color: #b0b0b0;
+            margin: 0.5rem 0;
+        }
+
+        .port-version {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+
+        .vulnerability-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .risk-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .risk-critical {
+            background: #ff0055;
+            color: white;
+        }
+
+        .risk-high {
+            background: #ff4444;
+            color: white;
+        }
+
+        .risk-medium {
+            background: #ffaa00;
+            color: black;
+        }
+
+        .risk-low {
+            background: #00ff88;
+            color: black;
+        }
+
+        .cve-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            color: #ffaa00;
+        }
+
+        .vuln-desc {
+            font-size: 0.8rem;
+            color: #b0b0b0;
+            flex: 1;
+        }
+
+        /* ===== LOADING INDICATOR ===== */
+        .scan-progress {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(26, 30, 36, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 245, 0.1);
+            border-radius: 20px;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 255, 245, 0.1);
+            border-top-color: #00fff5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+
+        .scan-status {
+            color: #00fff5;
+            font-size: 1.1rem;
+            margin-top: 1rem;
+        }
+
+        /* ===== NOTIFICATION ===== */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #00fff5, #9d00ff);
+            color: #0a0c0f;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            z-index: 9999;
+            animation: slideInRight 0.3s ease;
+            box-shadow: 0 0 30px rgba(0, 255, 245, 0.3);
+            font-weight: 500;
+        }
+
+        .notification-success {
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+        }
+
+        .notification-error {
+            background: linear-gradient(135deg, #ff0055, #cc0044);
+        }
+
+        .notification-warning {
+            background: linear-gradient(135deg, #ffaa00, #ff8800);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1e24;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #00fff5, #9d00ff);
+            border-radius: 5px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-menu {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .mode-buttons {
+                flex-direction: column;
+            }
+
+            .scan-input-group {
+                flex-direction: column;
+            }
+
+            .scan-summary {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .ports-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .results-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .user-greeting {
+                display: none;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Animated Background -->
+    <div class="cyber-bg">
+        <div class="matrix-rain"></div>
+        <div class="grid-overlay"></div>
+        <div class="scan-line"></div>
+        <div class="floating-elements">
+            <div class="floating-shield">🛡️</div>
+            <div class="floating-lock">🔒</div>
+            <div class="floating-globe">🌐</div>
+            <div class="floating-binary">010101</div>
+            <div class="floating-scan">📡</div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="scan-section">
+            <h1>Network Security Scanner</h1>
+            <p>Enter an IP, Hostname, or URL to scan for open ports and vulnerabilities</p>
+
+            <!-- Scan Mode Selector -->
+            <div class="scan-mode-section">
+                <span class="mode-label"><i class="fas fa-sliders-h"></i> SELECT SCAN MODE</span>
+                <div class="mode-buttons">
+                    <button class="mode-btn active" data-mode="tcp" title="TCP Top 1000 ports">
+                        <i class="fas fa-network-wired"></i> TCP
+                    </button>
+                    <button class="mode-btn" data-mode="udp" title="UDP common ports">
+                        <i class="fas fa-broadcast-tower"></i> UDP
+                    </button>
+                    <button class="mode-btn" data-mode="all-ports" title="All 65535 TCP ports — slow but thorough">
+                        <i class="fas fa-list-ol"></i> All TCP Ports
+                    </button>
+                </div>
+            </div>
+
+            <div class="scan-input-group">
+                <input type="text" id="targetIP" placeholder="e.g., 192.168.1.1, example.com, or https://example.com">
+                <button id="scanBtn" class="btn-primary">
+                    <i class="fas fa-play"></i> Start Scan
+                </button>
+            </div>
+
+            <div class="scan-info">
+                <span class="info-badge"><i class="fas fa-bolt"></i> Quick: ~10s</span>
+                <span class="info-badge"><i class="fas fa-network-wired"></i> TCP: ~30-60s</span>
+                <span class="info-badge"><i class="fas fa-list-ol"></i> All TCP: ~5-10min</span>
+                <span class="info-badge"><i class="fas fa-bug"></i> CVE Database</span>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="scanResults" class="scan-results"></div>
+
+        <!-- Loading -->
+        <div id="loadingIndicator" class="scan-progress" style="display: none;">
+            <div class="spinner"></div>
+            <p class="scan-status" id="scanStatus">Initializing scan...</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-search"></i></div>
+                <div class="stat-content">
+                    <h3 class="stat-value" id="totalScans">{{ stats.total_scans if stats else 0 }}</h3>
+                    <p class="stat-label">Total Scans</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-door-open"></i></div>
+                <div class="stat-content">
+                    <h3 class="stat-value" id="openPorts">0</h3>
+                    <p class="stat-label">Open Ports</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="stat-content">
+                    <h3 class="stat-value" id="criticalRisks">0</h3>
+                    <p class="stat-label">Critical Risks</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
+                <div class="stat-content">
+                    <h3 class="stat-value" id="securityScore">100</h3>
+                    <p class="stat-label">Security Score</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // ==================== GLOBAL VARIABLES ====================
+        let currentMode = 'tcp';
+        let isScanning = false;
+
+        // ==================== SCAN MODE SELECTION ====================
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                if (isScanning) {
+                    showNotification('Scan in progress. Please wait...', 'warning');
+                    return;
+                }
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentMode = this.dataset.mode;
+            });
+        });
+
+        // ==================== MAIN SCAN ====================
+        document.getElementById('scanBtn').addEventListener('click', function () {
+            if (isScanning) {
+                showNotification('Scan already in progress', 'warning');
+                return;
+            }
+
+            const target = document.getElementById('targetIP').value.trim();
+            if (!target) {
+                showNotification('Please enter an IP, Hostname, or URL', 'error');
+                return;
+            }
+
+            performScan(target, currentMode);
+        });
+
+        function performScan(target, mode) {
+            isScanning = true;
+
+            const scanBtn = document.getElementById('scanBtn');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultsDiv = document.getElementById('scanResults');
+            const scanStatus = document.getElementById('scanStatus');
+
+            scanBtn.disabled = true;
+            scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning...';
+            loadingIndicator.style.display = 'block';
+            resultsDiv.style.display = 'none';
+
+            let statusIndex = 0;
+            const statusMessages = [
+                'Initializing...', 'Resolving target...', 'Scanning ports...',
+                'Analyzing services...', 'Checking vulnerabilities...', 'Finalizing...'
+            ];
+
+            const statusInterval = setInterval(() => {
+                if (statusIndex < statusMessages.length) {
+                    scanStatus.textContent = statusMessages[statusIndex];
+                    statusIndex++;
+                }
+            }, 3000);
+
+            const body = { ip: target, mode: mode };
+
+            fetch('/portscan/scan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(body)
+            })
+                .then(async response => {
+                    clearInterval(statusInterval);
+
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.error || `Server error: ${response.status}`);
+                        }
+                        return data;
+                    } else {
+                        // Received something else (likely HTML)
+                        const text = await response.text();
+                        console.error('Non-JSON response received:', text);
+
+                        if (response.status === 401) {
+                            throw new Error('Your session has expired. Please refresh the page and login again.');
+                        } else if (response.status === 403) {
+                            throw new Error('Access denied. Admin privileges required.');
+                        } else if (response.status === 404) {
+                            throw new Error('Scan endpoint not found.');
+                        } else {
+                            throw new Error(`Unexpected response from server (Status: ${response.status}). The scan might have failed or the server is unavailable.`);
+                        }
+                    }
+                })
+                .then(data => {
+                    if (data.error) {
+                        showNotification(data.error, 'error');
+                        scanStatus.textContent = 'Scan failed: ' + data.error;
+                        return;
+                    }
+                    displayResults(data);
+                    showNotification('Scan complete!', 'success');
+                    updateStats(data);
+                })
+                .catch(error => {
+                    clearInterval(statusInterval);
+                    console.error('Scan Error:', error);
+                    showNotification('Scan failed: ' + error.message, 'error');
+                    scanStatus.textContent = 'Scan failed: ' + (error.message.length > 30 ? error.message.substring(0, 30) + '...' : error.message);
+                })
+                .finally(() => {
+                    isScanning = false;
+                    scanBtn.disabled = false;
+                    scanBtn.innerHTML = '<i class="fas fa-play"></i> Start Scan';
+                    setTimeout(() => loadingIndicator.style.display = 'none', 1000);
+                });
+        }
+
+        // ==================== DISPLAY RESULTS ====================
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('scanResults');
+
+            let open = 0, closed = 0, filtered = 0, critical = 0;
+            if (data.ports) {
+                data.ports.forEach(p => {
+                    if (p.state === 'open') open++;
+                    else if (p.state === 'closed') closed++;
+                    else filtered++;
+                    if (p.vulnerability?.risk === 'Critical') critical++;
+                });
+            }
+
+            let html = `
+                <div class="results-header">
+                    <h3><i class="fas fa-check-circle" style="color:#00ff88;"></i> Results for ${data.target}</h3>
+                    <span class="info-badge"><i class="fas fa-clock"></i> ${data.scan_time || new Date().toLocaleString()}</span>
+                </div>
+                <div class="scan-summary">
+                    <div class="summary-item"><span>Type:</span> <span class="summary-value">${(data.scan_type || 'tcp').replace(/-/g, ' ').toUpperCase()}</span></div>
+                    <div class="summary-item"><span>Open:</span> <span class="summary-value">${open}</span></div>
+                    <div class="summary-item"><span>Closed:</span> <span class="summary-value">${closed}</span></div>
+                    <div class="summary-item"><span>Filtered:</span> <span class="summary-value">${filtered}</span></div>
+                    <div class="summary-item"><span>Critical:</span> <span class="summary-value" style="color:#ff0055;">${critical}</span></div>
+                </div>
+                <div class="ports-grid">
+            `;
+
+            if (data.ports?.length) {
+                data.ports.forEach(p => {
+                    const portClass = p.state === 'open' ? 'open' : p.state === 'closed' ? 'closed' : 'filtered';
+                    const stateClass = p.state === 'open' ? 'state-open' : p.state === 'closed' ? 'state-closed' : 'state-filtered';
+                    const riskClass = p.vulnerability ? `risk-${p.vulnerability.risk.toLowerCase()}` : '';
+
+                    html += `
+                        <div class="port-card ${portClass}">
+                            <div class="port-header">
+                                <span class="port-number">Port ${p.port}</span>
+                                <span class="port-protocol">${p.protocol || 'TCP'}</span>
+                                <span class="port-state ${stateClass}">${p.state.toUpperCase()}</span>
+                            </div>
+                            <div class="port-service"><i class="fas fa-cog"></i> ${p.service || 'unknown'}</div>
+                            ${p.version && p.version !== 'unknown' ? `<div class="port-version"><i class="fas fa-code-branch"></i> ${p.version}</div>` : ''}
+                            ${p.vulnerability && p.state === 'open' ? `
+                                <div class="vulnerability-info">
+                                    <span class="risk-badge ${riskClass}">${p.vulnerability.risk}</span>
+                                    ${p.vulnerability.cve && p.vulnerability.cve !== 'N/A' ? `<span class="cve-badge">${p.vulnerability.cve}</span>` : ''}
+                                    <span class="vuln-desc">${p.vulnerability.desc}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<p class="no-results">No ports found</p>';
+            }
+
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ==================== UPDATE STATS ====================
+        function updateStats(data) {
+            const totalEl = document.getElementById('totalScans');
+            const openEl = document.getElementById('openPorts');
+            const criticalEl = document.getElementById('criticalRisks');
+
+            if (totalEl) totalEl.textContent = parseInt(totalEl.textContent) + 1;
+            if (openEl && data.ports) {
+                const open = data.ports.filter(p => p.state === 'open').length;
+                openEl.textContent = parseInt(openEl.textContent || 0) + open;
+            }
+            if (criticalEl && data.ports) {
+                const critical = data.ports.filter(p => p.vulnerability?.risk === 'Critical').length;
+                criticalEl.textContent = parseInt(criticalEl.textContent || 0) + critical;
+            }
+        }
+
+        // ==================== NOTIFICATION ====================
+        function showNotification(message, type) {
+            const existing = document.querySelector('.notification');
+            if (existing) existing.remove();
+
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'exclamation-triangle'}"></i> ${message}`;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        // ==================== KEYBOARD SHORTCUT ====================
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.key === 'Enter' && !isScanning) {
+                e.preventDefault();
+                document.getElementById('scanBtn').click();
+            }
+        });
+
+        // ==================== INPUT VALIDATION ====================
+        document.getElementById('targetIP').addEventListener('input', function () {
+            const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            const hostPattern = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
+
+            const isValid = ipPattern.test(this.value) ||
+                hostPattern.test(this.value) ||
+                urlPattern.test(this.value) ||
+                this.value === 'localhost' ||
+                this.value.startsWith('www.');
+
+            this.style.borderColor = isValid ? '#00ff88' : '#ff0055';
+        });
+    </script>
+{% endblock %}

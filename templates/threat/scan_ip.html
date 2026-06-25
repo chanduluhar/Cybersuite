@@ -1,0 +1,1711 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Main IP Scan Card -->
+        <div class="col-lg-8">
+            <div class="cyber-ip-card animate-fade-in">
+                <!-- Scanning Effects -->
+                <div class="scan-line"></div>
+                <div class="scan-pulse"></div>
+                <div class="floating-particles">
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                </div>
+
+                <!-- Corner Decorations -->
+                <div class="corner top-left"></div>
+                <div class="corner top-right"></div>
+                <div class="corner bottom-left"></div>
+                <div class="corner bottom-right"></div>
+
+                <!-- Header with Globe Animation -->
+                <div class="scan-header">
+                    <div class="header-icon">
+                        <div class="globe-container">
+                            <i class="bi bi-globe2"></i>
+                            <div class="globe-ring ring1"></div>
+                            <div class="globe-ring ring2"></div>
+                            <div class="globe-ring ring3"></div>
+                        </div>
+                    </div>
+                    <h2 class="glitch-text" data-text="IP REPUTATION SCANNER">IP REPUTATION SCANNER</h2>
+                    <p class="typing-text">Analyze IP addresses against 50+ threat intelligence feeds</p>
+                </div>
+
+                <!-- IP Scan Form -->
+                <form method="POST" action="{{ url_for('phishing.scan_ip') }}" class="cyber-ip-form" id="ipForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="ip-input-group">
+                        <div class="cyber-input-wrapper">
+                            <i class="bi bi-globe input-icon"></i>
+                            <input type="text" 
+                                   name="ip" 
+                                   class="cyber-input" 
+                                   placeholder="Enter IP address (e.g., 8.8.8.8)" 
+                                   id="ipInput"
+                                   pattern="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
+                                   title="Please enter a valid IPv4 address"
+                                   required>
+                            <span class="input-border"></span>
+                            <span class="input-glow"></span>
+                            <span class="ip-validator" id="ipValidator"></span>
+                        </div>
+                        <button type="submit" class="cyber-scan-btn" id="scanBtn">
+                            <span class="btn-text">ANALYZE IP</span>
+                            <span class="btn-glitch"></span>
+                            <span class="btn-scan"></span>
+                            <span class="btn-particles"></span>
+                        </button>
+                    </div>
+
+                    <!-- Quick IP Examples -->
+                    <div class="quick-examples">
+                        <span class="examples-label">Try examples:</span>
+                        <button type="button" class="example-link" onclick="setIP('8.8.8.8')">8.8.8.8 (Google)</button>
+                        <button type="button" class="example-link" onclick="setIP('1.1.1.1')">1.1.1.1 (Cloudflare)</button>
+                        <button type="button" class="example-link" onclick="setIP('185.130.5.133')">185.130.5.133 (Known Threat)</button>
+                    </div>
+                </form>
+
+                {% if result %}
+                <!-- Scan Results -->
+                <div class="scan-results" id="scanResults">
+                    <!-- Result Header -->
+                    <div class="result-header">
+                        <div class="result-title">
+                            <i class="bi bi-shield-fill-check"></i>
+                            <h3>Analysis Results: <span class="ip-highlight">{{ result.ip }}</span></h3>
+                        </div>
+                        
+                        {% if result.classification == 'threat' %}
+                        <div class="result-badge danger">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span>THREAT DETECTED</span>
+                            <div class="badge-pulse"></div>
+                        </div>
+                        {% elif result.classification == 'safe' %}
+                        <div class="result-badge success">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>SAFE IP</span>
+                        </div>
+                        {% else %}
+                        <div class="result-badge unknown">
+                            <i class="bi bi-question-circle-fill"></i>
+                            <span>UNKNOWN</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Threat Meter -->
+                    <div class="threat-meter">
+                        <div class="meter-container">
+                            <div class="meter-label">Threat Level</div>
+                            <div class="meter-bar">
+                                <div class="meter-fill" style="width: {{ result.abuse_score|default(0)|int }}%; background: {% if result.abuse_score > 70 %}linear-gradient(90deg, #ff00ff, #ff0000){% elif result.abuse_score > 30 %}linear-gradient(90deg, #ffff00, #ff6600){% else %}linear-gradient(90deg, #00ff00, #00ffff){% endif %};"></div>
+                            </div>
+                            <div class="meter-value">
+                                <span class="value-number">{{ result.abuse_score|default(0)|int }}%</span>
+                                <span class="value-text">Confidence Score</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Grid -->
+                    <div class="results-grid">
+                        <!-- AbuseIPDB Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="100">
+                            <div class="card-header">
+                                <i class="bi bi-shield-exclamation"></i>
+                                <h4>AbuseIPDB Analysis</h4>
+                            </div>
+                            <div class="card-content">
+                                {% if result.abuse_score is not none %}
+                                <div class="abuse-stats">
+                                    <div class="abuse-stat">
+                                        <span class="stat-value {% if result.abuse_score > 70 %}text-danger{% elif result.abuse_score > 30 %}text-warning{% else %}text-success{% endif %}">
+                                            {{ result.abuse_score }}%
+                                        </span>
+                                        <span class="stat-label">Abuse Confidence</span>
+                                    </div>
+                                    <div class="abuse-stat">
+                                        <span class="stat-value">{{ result.details.total_reports|default(0) }}</span>
+                                        <span class="stat-label">Total Reports</span>
+                                    </div>
+                                    <div class="abuse-stat">
+                                        <span class="stat-value">{{ result.details.last_reported|default('Never') }}</span>
+                                        <span class="stat-label">Last Reported</span>
+                                    </div>
+                                </div>
+
+                                <!-- Categories if available -->
+                                {% if result.details.categories %}
+                                <div class="abuse-categories">
+                                    <span class="categories-label">Report Categories:</span>
+                                    <div class="category-tags">
+                                        {% for category in result.details.categories %}
+                                        <span class="category-tag">{{ category }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% else %}
+                                <div class="no-data">
+                                    <i class="bi bi-database-slash"></i>
+                                    <p>No AbuseIPDB data available</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- VirusTotal Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="200">
+                            <div class="card-header">
+                                <i class="bi bi-virus"></i>
+                                <h4>VirusTotal Intel</h4>
+                            </div>
+                            <div class="card-content">
+                                <div class="vt-stats">
+                                    <div class="vt-stat malicious">
+                                        <span class="stat-label">Malicious</span>
+                                        <span class="stat-value text-danger">{{ result.vt_stats.malicious|default(0) }}</span>
+                                    </div>
+                                    <div class="vt-stat suspicious">
+                                        <span class="stat-label">Suspicious</span>
+                                        <span class="stat-value text-warning">{{ result.vt_stats.suspicious|default(0) }}</span>
+                                    </div>
+                                    <div class="vt-stat harmless">
+                                        <span class="stat-label">Harmless</span>
+                                        <span class="stat-value text-success">{{ result.vt_stats.harmless|default(0) }}</span>
+                                    </div>
+                                    <div class="vt-stat undetected">
+                                        <span class="stat-label">Undetected</span>
+                                        <span class="stat-value">{{ result.vt_stats.undetected|default(0) }}</span>
+                                    </div>
+                                </div>
+                                <div class="vt-summary">
+                                    <div class="vt-engine-count">
+                                        <i class="bi bi-diagram-3"></i>
+                                        <span>{{ result.vt_stats.total|default(0) }} Security Engines</span>
+                                    </div>
+                                    {% if result.vt_stats.status == 'success' %}
+                                    <span class="status-badge success">
+                                        <i class="bi bi-check-circle"></i> Verified
+                                    </span>
+                                    {% elif result.vt_stats.status == 'rate_limited' %}
+                                    <span class="status-badge warning">
+                                        <i class="bi bi-exclamation-triangle"></i> Rate Limited
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Geolocation Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="300">
+                            <div class="card-header">
+                                <i class="bi bi-pin-map-fill"></i>
+                                <h4>IP Geolocation</h4>
+                            </div>
+                            <div class="card-content">
+                                {% if result.details %}
+                                <div class="geo-details">
+                                    <div class="geo-item">
+                                        <i class="bi bi-flag"></i>
+                                        <div>
+                                            <span class="geo-label">Country</span>
+                                            <span class="geo-value">{{ result.details.country|default('Unknown') }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="geo-item">
+                                        <i class="bi bi-building"></i>
+                                        <div>
+                                            <span class="geo-label">ISP / Organization</span>
+                                            <span class="geo-value">{{ result.details.isp|default('Unknown') }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="geo-item">
+                                        <i class="bi bi-clock"></i>
+                                        <div>
+                                            <span class="geo-label">Timezone</span>
+                                            <span class="geo-value">{{ result.details.timezone|default('Unknown') }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="geo-item">
+                                        <i class="bi bi-globe"></i>
+                                        <div>
+                                            <span class="geo-label">Domain</span>
+                                            <span class="geo-value">{{ result.details.domain|default('None') }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="no-data">
+                                    <i class="bi bi-geo-alt"></i>
+                                    <p>Geolocation data unavailable</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Risk Assessment Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="400">
+                            <div class="card-header">
+                                <i class="bi bi-exclamation-diamond"></i>
+                                <h4>Risk Assessment</h4>
+                            </div>
+                            <div class="card-content">
+                                {% set risk_level = 'HIGH' if result.abuse_score|default(0) > 70 else 'MEDIUM' if result.abuse_score|default(0) > 30 else 'LOW' %}
+                                {% set risk_color = '#ff00ff' if risk_level == 'HIGH' else '#ffff00' if risk_level == 'MEDIUM' else '#00ff00' %}
+                                
+                                <div class="risk-level">
+                                    <div class="risk-indicator" style="border-color: {{ risk_color }}; color: {{ risk_color }};">
+                                        {{ risk_level }} RISK
+                                    </div>
+                                </div>
+                                
+                                <div class="risk-factors">
+                                    <div class="factor">
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                        <span>Blacklist Status: {{ 'Listed' if result.vt_stats.malicious|default(0) > 0 else 'Clean' }}</span>
+                                    </div>
+                                    <div class="factor">
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                        <span>Abuse Reports: {{ result.details.total_reports|default('None') }}</span>
+                                    </div>
+                                    <div class="factor">
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                        <span>ISP Reputation: {{ 'Suspicious' if result.abuse_score|default(0) > 50 else 'Good' }}</span>
+                                    </div>
+                                    <div class="factor">
+                                        {% if result.ismalicious_stats.status == 'success' and result.ismalicious_stats.is_malicious %}
+                                        <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                                        <span>IsMalicious: Malicious</span>
+                                        {% elif result.ismalicious_stats.status == 'success' %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                        <span>IsMalicious: Safe</span>
+                                        {% elif result.ismalicious_stats.status == 'unconfigured' %}
+                                        <i class="bi bi-gear-fill text-secondary"></i>
+                                        <span>IsMalicious: Unconfigured</span>
+                                        {% elif result.ismalicious_stats.status == 'rate_limited' %}
+                                        <i class="bi bi-exclamation-circle-fill text-warning"></i>
+                                        <span>IsMalicious: Rate Limited</span>
+                                        {% else %}
+                                        <i class="bi bi-dash-circle-fill text-secondary"></i>
+                                        <span>IsMalicious: Unknown</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="risk-recommendation">
+                                    <strong>Recommendation:</strong>
+                                    {% if risk_level == 'HIGH' %}
+                                    <span class="text-danger">Immediately block this IP and investigate any connections.</span>
+                                    {% elif risk_level == 'MEDIUM' %}
+                                    <span class="text-warning">Monitor traffic from this IP and proceed with caution.</span>
+                                    {% else %}
+                                    <span class="text-success">IP appears safe for normal operations.</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IP Reputation Timeline -->
+                    <div class="reputation-timeline" data-aos="fade-up">
+                        <h4><i class="bi bi-clock-history"></i> Abuse Report Timeline</h4>
+                        {% if result.details.reports %}
+                        <div class="timeline-list">
+                            {% for report in result.details.reports[:5] %}
+                            <div class="timeline-item">
+                                <div class="timeline-date">{{ report.date }}</div>
+                                <div class="timeline-category">{{ report.category }}</div>
+                                <div class="timeline-comment">{{ report.comment|truncate(100) }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-secondary">No recent abuse reports for this IP.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Prevention & Information Sidebar -->
+        <div class="col-lg-4">
+            <div class="info-sidebar">
+                <!-- IP Risk Statistics -->
+                <div class="info-card" data-aos="fade-left" data-aos-delay="100">
+                    <div class="card-header">
+                        <i class="bi bi-graph-up"></i>
+                        <h3>IP Threat Statistics</h3>
+                    </div>
+                    <div class="stats-container">
+                        <div class="stat-block">
+                            <span class="stat-number">35%</span>
+                            <span class="stat-desc">of malicious IPs are from cloud hosts</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-number">72h</span>
+                            <span class="stat-desc">average time IP stays malicious</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-number">1.2M</span>
+                            <span class="stat-desc">malicious IPs detected daily</span>
+                        </div>
+                        <div class="stat-block">
+                            <span class="stat-number">40%</span>
+                            <span class="stat-desc">are repeat offenders</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How to Protect Your IP -->
+                <div class="info-card" data-aos="fade-left" data-aos-delay="200">
+                    <div class="card-header">
+                        <i class="bi bi-shield-plus"></i>
+                        <h3>Protect Your IP</h3>
+                    </div>
+                    <div class="tips-list">
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Use VPN Services</h4>
+                                <p>Hide your real IP address from potential attackers</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Enable Firewall</h4>
+                                <p>Block unauthorized access attempts to your network</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Regular IP Rotation</h4>
+                                <p>Change your IP periodically if you're a target</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Monitor IP Reputation</h4>
+                                <p>Regularly check if your IP is blacklisted</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Signs -->
+                <div class="info-card warning-card" data-aos="fade-left" data-aos-delay="300">
+                    <div class="card-header">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <h3>IP Warning Signs</h3>
+                    </div>
+                    <div class="warning-list">
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>Unusual outbound traffic patterns</span>
+                        </div>
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>Multiple failed login attempts</span>
+                        </div>
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>IP listed on 3+ blacklists</span>
+                        </div>
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>High abuse confidence score (>70%)</span>
+                        </div>
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>Located in high-risk countries</span>
+                        </div>
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>Associated with botnet activity</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IP Categories -->
+                <div class="info-card" data-aos="fade-left" data-aos-delay="400">
+                    <div class="card-header">
+                        <i class="bi bi-tags"></i>
+                        <h3>Abuse Categories</h3>
+                    </div>
+                    <div class="categories-list">
+                        <div class="category-item">
+                            <span class="cat-badge" style="background: #ff00ff;">Port Scan</span>
+                            <span class="cat-desc">Reconnaissance activity</span>
+                        </div>
+                        <div class="category-item">
+                            <span class="cat-badge" style="background: #ff0000;">Brute-Force</span>
+                            <span class="cat-desc">Login attempts</span>
+                        </div>
+                        <div class="category-item">
+                            <span class="cat-badge" style="background: #ffff00; color: #000;">Web Attack</span>
+                            <span class="cat-desc">Web app exploitation</span>
+                        </div>
+                        <div class="category-item">
+                            <span class="cat-badge" style="background: #00ffff; color: #000;">Spam</span>
+                            <span class="cat-desc">Email spam sources</span>
+                        </div>
+                        <div class="category-item">
+                            <span class="cat-badge" style="background: #ff6600;">Malware</span>
+                            <span class="cat-desc">Malware distribution</span>
+                        </div>
+                        <div class="category-item">
+                            <span class="cat-badge" style="background: #800080;">Phishing</span>
+                            <span class="cat-desc">Phishing hosts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report IP -->
+                <div class="info-card emergency-card" data-aos="fade-left" data-aos-delay="500">
+                    <div class="card-header">
+                        <i class="bi bi-telephone-fill"></i>
+                        <h3>Report Malicious IP</h3>
+                    </div>
+                    <div class="emergency-content">
+                        <p>If you've identified a malicious IP:</p>
+                        <ul>
+                            <li><i class="bi bi-shield-fill"></i> <a href="https://www.abuseipdb.com/report" target="_blank">Report to AbuseIPDB</a></li>
+                            <li><i class="bi bi-virus"></i> <a href="https://www.virustotal.com/gui/ip-address" target="_blank">Submit to VirusTotal</a></li>
+                            <li><i class="bi bi-envelope-fill"></i> Contact your ISP</li>
+                            <li><i class="bi bi-building"></i> Report to local CERT</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ===== IP SCANNER PAGE CYBER STYLES ===== */
+
+/* Main Card */
+.cyber-ip-card {
+    position: relative;
+    background: rgba(10, 15, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid #00ffff;
+    padding: 2rem;
+    overflow: hidden;
+    animation: cardAppear 0.8s ease-out;
+    box-shadow: 0 0 50px rgba(0, 255, 255, 0.2);
+}
+
+@keyframes cardAppear {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scan Effects */
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00ffff, #ff00ff, #00ffff, transparent);
+    animation: scanMove 4s linear infinite;
+}
+
+@keyframes scanMove {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.scan-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 30% 50%, rgba(0, 255, 255, 0.1), transparent);
+    animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+}
+
+/* Floating Particles */
+.floating-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.floating-particles .particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #00ffff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: particleFloat 4s linear infinite;
+}
+
+.floating-particles .particle:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
+.floating-particles .particle:nth-child(2) { top: 40%; right: 15%; animation-delay: 0.8s; }
+.floating-particles .particle:nth-child(3) { bottom: 30%; left: 20%; animation-delay: 1.6s; }
+.floating-particles .particle:nth-child(4) { bottom: 50%; right: 25%; animation-delay: 2.4s; }
+.floating-particles .particle:nth-child(5) { top: 70%; left: 30%; animation-delay: 3.2s; }
+
+@keyframes particleFloat {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100px) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Corner Decorations */
+.corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ffff;
+    animation: cornerPulse 2s ease-in-out infinite;
+}
+
+.corner.top-left {
+    top: 10px;
+    left: 10px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.corner.top-right {
+    top: 10px;
+    right: 10px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.corner.bottom-left {
+    bottom: 10px;
+    left: 10px;
+    border-right: none;
+    border-top: none;
+}
+
+.corner.bottom-right {
+    bottom: 10px;
+    right: 10px;
+    border-left: none;
+    border-top: none;
+}
+
+@keyframes cornerPulse {
+    0%, 100% { 
+        width: 20px;
+        height: 20px;
+        opacity: 1;
+    }
+    50% { 
+        width: 30px;
+        height: 30px;
+        opacity: 0.7;
+        border-color: #ff00ff;
+    }
+}
+
+/* Header */
+.scan-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.header-icon {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.globe-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.globe-container i {
+    font-size: 3.5rem;
+    color: #00ffff;
+    text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    animation: globeSpin 10s linear infinite;
+    z-index: 2;
+}
+
+@keyframes globeSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.globe-ring {
+    position: absolute;
+    border: 2px solid #00ffff;
+    border-radius: 50%;
+    animation: ringExpand 3s ease-out infinite;
+}
+
+.ring1 {
+    width: 100%;
+    height: 100%;
+    animation-delay: 0s;
+}
+
+.ring2 {
+    width: 120%;
+    height: 120%;
+    animation-delay: 0.5s;
+}
+
+.ring3 {
+    width: 140%;
+    height: 140%;
+    animation-delay: 1s;
+}
+
+@keyframes ringExpand {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+.glitch-text {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    position: relative;
+    animation: glitchSkew 4s infinite;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.glitch-text::before {
+    color: #ff00ff;
+    z-index: -1;
+    animation: glitchOffset 0.3s infinite;
+}
+
+.glitch-text::after {
+    color: #00ffff;
+    z-index: -2;
+    animation: glitchOffset 0.3s infinite reverse;
+}
+
+@keyframes glitchSkew {
+    0%, 100% { transform: skew(0deg); }
+    92% { transform: skew(2deg); }
+    94% { transform: skew(-2deg); }
+    96% { transform: skew(1deg); }
+    98% { transform: skew(-1deg); }
+}
+
+@keyframes glitchOffset {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(2px, -2px); }
+    60% { transform: translate(-2px, -2px); }
+    80% { transform: translate(2px, 2px); }
+    100% { transform: translate(0); }
+}
+
+.typing-text {
+    color: #888;
+    font-size: 1rem;
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid #00ffff;
+    animation: typing 3s steps(50) infinite, blink 0.5s step-end infinite;
+    max-width: fit-content;
+    margin: 0 auto;
+}
+
+@keyframes typing {
+    0%, 100% { width: 0; }
+    50% { width: 450px; }
+}
+
+@keyframes blink {
+    50% { border-color: transparent; }
+}
+
+/* IP Form */
+.ip-input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.cyber-input-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #00ffff;
+    z-index: 3;
+    font-size: 1.2rem;
+}
+
+.cyber-input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: #fff;
+    font-size: 1rem;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s;
+    font-family: 'Courier New', monospace;
+}
+
+.cyber-input:focus {
+    outline: none;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.cyber-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.input-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #00ffff;
+    pointer-events: none;
+    transition: all 0.3s;
+    animation: borderPulse 3s infinite;
+}
+
+@keyframes borderPulse {
+    0%, 100% { 
+        border-color: #00ffff;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    }
+    50% { 
+        border-color: #ff00ff;
+        box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+    }
+}
+
+.input-glow {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+    pointer-events: none;
+}
+
+.cyber-input-wrapper:hover .input-glow {
+    left: 100%;
+}
+
+.ip-validator {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    z-index: 3;
+}
+
+.ip-validator.valid {
+    background: #00ff00;
+    box-shadow: 0 0 10px #00ff00;
+}
+
+.ip-validator.invalid {
+    background: #ff00ff;
+    box-shadow: 0 0 10px #ff00ff;
+}
+
+/* Scan Button */
+.cyber-scan-btn {
+    position: relative;
+    padding: 0 2rem;
+    background: linear-gradient(135deg, #00ffff, #00ccff);
+    border: none;
+    color: #0a0c0f;
+    font-family: inherit;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s;
+    min-width: 150px;
+    animation: btnPulse 2s ease-in-out infinite;
+}
+
+@keyframes btnPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.btn-glitch {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: btnGlitch 3s infinite;
+}
+
+@keyframes btnGlitch {
+    0%, 100% { transform: translateX(-100%); }
+    92% { transform: translateX(100%); }
+    94% { transform: translateX(-100%); }
+    96% { transform: translateX(50%); }
+    98% { transform: translateX(-50%); }
+}
+
+.btn-scan {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #fff, transparent);
+    animation: btnScan 2s linear infinite;
+}
+
+@keyframes btnScan {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.cyber-scan-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(0, 255, 255, 0.8);
+}
+
+/* Quick Examples */
+.quick-examples {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.examples-label {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.example-link {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    color: #00ffff;
+    padding: 0.3rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.9rem;
+    font-family: 'Courier New', monospace;
+}
+
+.example-link:hover {
+    border-color: #00ffff;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Scan Results */
+.scan-results {
+    margin-top: 3rem;
+    animation: resultsAppear 0.8s ease-out;
+}
+
+@keyframes resultsAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.result-title {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.result-title i {
+    color: #00ffff;
+    font-size: 1.5rem;
+    animation: titleGlow 2s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+    0%, 100% { filter: drop-shadow(0 0 5px #00ffff); }
+    50% { filter: drop-shadow(0 0 15px #00ffff); }
+}
+
+.result-title h3 {
+    color: #fff;
+    margin: 0;
+}
+
+.ip-highlight {
+    color: #00ffff;
+    font-family: 'Courier New', monospace;
+}
+
+.result-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.result-badge.danger {
+    background: rgba(255, 0, 255, 0.2);
+    border: 1px solid #ff00ff;
+    color: #ff00ff;
+}
+
+.result-badge.success {
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px solid #00ff00;
+    color: #00ff00;
+}
+
+.result-badge.unknown {
+    background: rgba(128, 128, 128, 0.2);
+    border: 1px solid #888;
+    color: #888;
+}
+
+.badge-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255,0,255,0.3), transparent);
+    animation: badgePulse 1s ease-out infinite;
+}
+
+@keyframes badgePulse {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+/* Threat Meter */
+.threat-meter {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.meter-container {
+    text-align: center;
+}
+
+.meter-label {
+    color: #888;
+    margin-bottom: 1rem;
+}
+
+.meter-bar {
+    height: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #00ffff;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.meter-fill {
+    height: 100%;
+    animation: meterFill 1s ease-out;
+}
+
+@keyframes meterFill {
+    from { width: 0; }
+}
+
+.meter-value {
+    display: flex;
+    flex-direction: column;
+}
+
+.value-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.value-text {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+/* Results Grid */
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.result-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 1.5rem;
+    transition: all 0.3s;
+}
+
+.result-card:hover {
+    border-color: #00ffff;
+    transform: translateY(-5px);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-header i {
+    color: #00ffff;
+    font-size: 1.5rem;
+}
+
+.card-header h4 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* Abuse Stats */
+.abuse-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    text-align: center;
+}
+
+.abuse-stat .stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.abuse-stat .stat-label {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+/* Categories */
+.abuse-categories {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.categories-label {
+    display: block;
+    color: #888;
+    margin-bottom: 0.5rem;
+}
+
+.category-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.category-tag {
+    background: rgba(255, 0, 255, 0.2);
+    border: 1px solid #ff00ff;
+    color: #ff00ff;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+/* VT Stats */
+.vt-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.vt-stat {
+    text-align: center;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.vt-stat .stat-label {
+    display: block;
+    color: #888;
+    font-size: 0.8rem;
+}
+
+.vt-stat .stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* Geo Details */
+.geo-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.geo-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.geo-item i {
+    color: #00ffff;
+    font-size: 1.2rem;
+}
+
+.geo-label {
+    display: block;
+    color: #888;
+    font-size: 0.8rem;
+}
+
+.geo-value {
+    color: #fff;
+}
+
+/* Risk Assessment */
+.risk-level {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.risk-indicator {
+    display: inline-block;
+    padding: 0.5rem 2rem;
+    border: 2px solid;
+    font-weight: 700;
+    font-size: 1.2rem;
+    animation: riskPulse 2s ease-in-out infinite;
+}
+
+@keyframes riskPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.risk-factors {
+    margin-bottom: 1.5rem;
+}
+
+.factor {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: #e0e0e0;
+}
+
+.risk-recommendation {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    font-size: 0.9rem;
+}
+
+/* Timeline */
+.reputation-timeline {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.reputation-timeline h4 {
+    color: #00ffff;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.timeline-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.timeline-item {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+    transition: all 0.3s;
+}
+
+.timeline-item:hover {
+    background: rgba(0, 255, 255, 0.05);
+    transform: translateX(5px);
+}
+
+.timeline-date {
+    color: #00ffff;
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+}
+
+.timeline-category {
+    color: #ff00ff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.timeline-comment {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+/* Info Sidebar */
+.info-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.info-card {
+    background: rgba(10, 15, 20, 0.95);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s;
+}
+
+.info-card:hover {
+    border-color: #00ffff;
+    transform: translateX(-5px);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+}
+
+.info-card.warning-card {
+    border-color: #ff00ff;
+}
+
+.info-card.emergency-card {
+    border-color: #ff0000;
+}
+
+.info-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-card .card-header i {
+    color: #00ffff;
+    font-size: 1.5rem;
+}
+
+.info-card.warning-card .card-header i {
+    color: #ff00ff;
+}
+
+.info-card.emergency-card .card-header i {
+    color: #ff0000;
+}
+
+.info-card .card-header h3 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+/* Stats Container */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.stat-block {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.stat-number {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #00ffff;
+    margin-bottom: 0.3rem;
+}
+
+.stat-desc {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+/* Tips List */
+.tips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tip-item {
+    display: flex;
+    gap: 1rem;
+}
+
+.tip-icon {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid #00ffff;
+    border-radius: 50%;
+    color: #00ffff;
+    flex-shrink: 0;
+}
+
+.tip-content h4 {
+    color: #fff;
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+}
+
+.tip-content p {
+    color: #888;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Warning List */
+.warning-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.warning-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: #e0e0e0;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid rgba(255, 0, 255, 0.1);
+}
+
+.warning-item i {
+    font-size: 1rem;
+}
+
+/* Categories List */
+.categories-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.cat-badge {
+    padding: 0.2rem 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 90px;
+    text-align: center;
+}
+
+.cat-desc {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+/* Emergency Content */
+.emergency-content p {
+    color: #888;
+    margin-bottom: 1rem;
+}
+
+.emergency-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.emergency-content li {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: #e0e0e0;
+    margin-bottom: 0.8rem;
+}
+
+.emergency-content li i {
+    color: #ff0000;
+}
+
+.emergency-content a {
+    color: #00ffff;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.emergency-content a:hover {
+    color: #ff00ff;
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+}
+
+/* No Data */
+.no-data {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.no-data i {
+    font-size: 3rem;
+    color: rgba(0, 255, 255, 0.3);
+    margin-bottom: 1rem;
+}
+
+.no-data p {
+    color: #888;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .ip-input-group {
+        flex-direction: column;
+    }
+    
+    .cyber-scan-btn {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .glitch-text {
+        font-size: 1.5rem;
+    }
+    
+    .typing-text {
+        font-size: 0.8rem;
+        white-space: normal;
+        animation: none;
+        border: none;
+    }
+    
+    .result-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .abuse-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-container {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<!-- AOS Animation Script -->
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+<script>
+// Initialize AOS
+AOS.init({
+    duration: 600,
+    once: true
+});
+
+// IP Validation
+document.addEventListener('DOMContentLoaded', function() {
+    const ipInput = document.getElementById('ipInput');
+    const ipValidator = document.getElementById('ipValidator');
+    
+    if(ipInput) {
+        ipInput.addEventListener('input', function() {
+            const ip = this.value;
+            const ipPattern = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/;
+            
+            if(ipPattern.test(ip)) {
+                ipValidator.className = 'ip-validator valid';
+            } else if(ip.length > 0) {
+                ipValidator.className = 'ip-validator invalid';
+            } else {
+                ipValidator.className = 'ip-validator';
+            }
+        });
+    }
+    
+    // Set example IP
+    window.setIP = function(ip) {
+        ipInput.value = ip;
+        ipInput.dispatchEvent(new Event('input'));
+    }
+    
+    // Form submission
+    const ipForm = document.getElementById('ipForm');
+    const scanBtn = document.getElementById('scanBtn');
+    
+    if(ipForm) {
+        ipForm.addEventListener('submit', function(e) {
+            const input = document.getElementById('ipInput');
+            if(!input.value || !input.checkValidity()) {
+                e.preventDefault();
+                alert('Please enter a valid IP address');
+                return;
+            }
+            
+            scanBtn.innerHTML = '<span class="btn-text">SCANNING IP...</span>';
+            scanBtn.style.animation = 'btnScanning 1s linear infinite';
+        });
+    }
+    
+    // Button mouse effect
+    if(scanBtn) {
+        scanBtn.addEventListener('mousemove', function(e) {
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const moveX = (x - rect.width/2) / 20;
+            const moveY = (y - rect.height/2) / 20;
+            
+            this.style.transform = `perspective(500px) rotateX(${moveY}deg) rotateY(${moveX}deg) scale(1.05)`;
+        });
+        
+        scanBtn.addEventListener('mouseleave', function() {
+            this.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
+        });
+    }
+});
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes btnScanning {
+        0%, 100% { filter: hue-rotate(0deg); }
+        50% { filter: hue-rotate(90deg); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

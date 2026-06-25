@@ -1,0 +1,1444 @@
+{% extends 'base.html' %}
+{% block title %}Port Scan History | CyberSuite{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Cyber Background */
+        .cyber-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0a0c0f 0%, #11151c 100%);
+        }
+
+        .matrix-rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, 
+                rgba(0, 255, 245, 0.03) 0px,
+                transparent 1px,
+                transparent 2px);
+            animation: matrix 20s linear infinite;
+        }
+
+        @keyframes matrix {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 245, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 245, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: grid 15s linear infinite;
+        }
+
+        @keyframes grid {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent,
+                #00fff5,
+                #9d00ff,
+                transparent);
+            animation: scan 4s linear infinite;
+            opacity: 0.3;
+        }
+
+        /* Floating Elements */
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .floating-elements > div {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.1;
+            animation: float 20s linear infinite;
+            color: #00fff5;
+        }
+
+        .floating-shield { top: 20%; left: 10%; animation-delay: 0s; }
+        .floating-lock { top: 60%; right: 15%; animation-delay: 5s; }
+        .floating-globe { bottom: 30%; left: 20%; animation-delay: 10s; }
+        .floating-binary { top: 40%; right: 25%; animation-delay: 15s; font-size: 3rem; }
+        .floating-scan { bottom: 20%; right: 30%; animation-delay: 7s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-20px) rotate(5deg); }
+            75% { transform: translateY(20px) rotate(-5deg); }
+        }
+
+        /* ===== MINIMALIST NAVBAR STYLES - CLEAN & PROFESSIONAL ===== */
+        .minimal-nav {
+            background: rgba(10, 12, 15, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 255, 245, 0.15);
+            padding: 0.8rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .minimal-nav:hover {
+            border-bottom-color: rgba(0, 255, 245, 0.3);
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* ===== MINIMALIST LOGO SECTION ===== */
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.3rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .logo-container:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .logo-image {
+            width: 38px;
+            height: 38px;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .logo-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-main {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-sub {
+            font-size: 0.6rem;
+            color: #00fff5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        /* ===== MINIMALIST MENU ===== */
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            color: #b0b0b0;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.95rem;
+            border: 1px solid transparent;
+        }
+
+        .nav-link i {
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-color: rgba(0, 255, 245, 0.2);
+        }
+
+        .nav-link.active {
+            background: rgba(0, 255, 245, 0.08);
+            color: #00fff5;
+            border-color: rgba(0, 255, 245, 0.3);
+        }
+
+        .nav-link.active i {
+            color: #00fff5;
+        }
+
+        /* Admin Link - subtle gold */
+        .nav-link.admin-link {
+            background: rgba(255, 215, 0, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .nav-link.admin-link:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: rgba(255, 215, 0, 0.4);
+        }
+
+        .nav-link.admin-link.active {
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+            border-color: rgba(255, 215, 0, 0.4);
+        }
+
+        .admin-badge {
+            background: #ffd700;
+            color: #0a0c0f;
+            font-size: 0.6rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            margin-left: 0.3rem;
+            font-weight: bold;
+        }
+
+        /* ===== MINIMALIST USER INFO ===== */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.3rem 0.3rem 0.3rem 1.2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .user-info:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(0, 255, 245, 0.2);
+        }
+
+        .user-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-label {
+            font-size: 0.65rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #00fff5;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1rem;
+            border: 1px solid rgba(0, 255, 245, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .user-avatar:hover {
+            border-color: #00fff5;
+            transform: scale(1.05);
+        }
+
+        /* Logout Button */
+        .logout-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 0, 85, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff6b6b;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 0, 85, 0.2);
+            margin-left: 0.3rem;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 0, 85, 0.2);
+            color: #ff0055;
+            transform: scale(1.05);
+            border-color: rgba(255, 0, 85, 0.4);
+        }
+
+        /* Hide original navbar */
+        .rgb-nav, .navbar {
+            display: none !important;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 968px) {
+            .minimal-nav {
+                padding: 0.8rem 1rem;
+            }
+
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-menu {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .user-info {
+                margin-top: 0.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-link span {
+                font-size: 0.85rem;
+            }
+
+            .user-label {
+                display: none;
+            }
+
+            .logo-main {
+                font-size: 1rem;
+            }
+
+            .logo-sub {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-link {
+                padding: 0.5rem 1rem;
+            }
+
+            .nav-link span {
+                display: none;
+            }
+
+            .nav-link i {
+                font-size: 1.2rem;
+            }
+
+            .user-name {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* History Page Enhanced Styles */
+        .history-header-section {
+            text-align: center;
+            margin: 2rem 0 3rem;
+        }
+
+        .header-subtitle {
+            color: #b0b0b0;
+            font-size: 1.1rem;
+        }
+
+        .history-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(26, 30, 36, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #00fff5;
+            box-shadow: 0 0 30px rgba(0, 255, 245, 0.2);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            color: #00fff5;
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00fff5;
+        }
+
+        .stat-label {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+        }
+
+        .search-section {
+            background: rgba(26, 30, 36, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-wrapper {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #00fff5;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            background: rgba(10, 12, 15, 0.8);
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #00fff5;
+            box-shadow: 0 0 20px rgba(0, 255, 245, 0.2);
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #b0b0b0;
+            cursor: pointer;
+        }
+
+        .filter-options {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 0.8rem 1.5rem;
+            background: rgba(10, 12, 15, 0.8);
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-select:hover {
+            border-color: #00fff5;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00fff5, #9d00ff);
+            border: none;
+            border-radius: 8px;
+            color: #0a0c0f;
+            font-weight: bold;
+            padding: 0.8rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 255, 245, 0.3);
+        }
+
+        .btn-danger {
+            background: rgba(255, 0, 85, 0.2);
+            border: 1px solid #ff0055;
+            border-radius: 8px;
+            color: #ff6b6b;
+            font-weight: bold;
+            padding: 0.8rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #ff0055;
+            color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 0, 85, 0.3);
+        }
+
+        .btn-danger:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Enhanced History Timeline */
+        .history-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .history-item {
+            background: rgba(26, 30, 36, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            border-color: rgba(0, 255, 245, 0.4);
+            box-shadow: 0 0 30px rgba(0, 255, 245, 0.1);
+        }
+
+        .history-header {
+            padding: 1.2rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .history-header:hover {
+            background: rgba(0, 255, 245, 0.05);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .ip-address {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 1.2rem;
+        }
+
+        .ip-text {
+            color: #00fff5;
+            font-weight: bold;
+        }
+
+        .scan-badge {
+            background: rgba(0, 255, 245, 0.1);
+            border: 1px solid rgba(0, 255, 245, 0.3);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #00fff5;
+        }
+
+        .open-badge {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .critical-badge {
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid #ff0055;
+            color: #ff6b6b;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .scan-time {
+            color: #888;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .history-toggle {
+            color: #00fff5;
+            transition: transform 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .history-item.active .history-toggle {
+            transform: rotate(180deg);
+        }
+
+        /* Enhanced Details Section */
+        .history-details {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(0, 255, 245, 0.2);
+            background: rgba(10, 12, 15, 0.9);
+        }
+
+        .details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .details-header h4 {
+            color: #00fff5;
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .details-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            background: rgba(10, 12, 15, 0.8);
+            color: #b0b0b0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            border-color: #00fff5;
+            color: #00fff5;
+            transform: scale(1.1);
+        }
+
+        .btn-icon-danger:hover {
+            border-color: #ff0055;
+            color: #ff0055;
+        }
+
+        /* Scan Summary */
+        .scan-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(0, 255, 245, 0.05);
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .summary-label {
+            color: #888;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-value {
+            color: #00fff5;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Ports Grid */
+        .ports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .port-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 245, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .port-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(0, 255, 245, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .port-card.open {
+            border-left: 4px solid #00ff88;
+        }
+
+        .port-card.closed {
+            border-left: 4px solid #ff0055;
+            opacity: 0.7;
+        }
+
+        .port-card.filtered {
+            border-left: 4px solid #ffaa00;
+        }
+
+        .port-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .port-number {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #00fff5;
+        }
+
+        .port-protocol {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            background: rgba(0, 255, 245, 0.1);
+            border-radius: 10px;
+            color: #00fff5;
+        }
+
+        .port-state {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .port-card.open .port-state {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .port-card.closed .port-state {
+            background: rgba(255, 0, 85, 0.2);
+            color: #ff0055;
+        }
+
+        .port-service {
+            margin: 0.5rem 0;
+            color: #b0b0b0;
+            font-size: 0.9rem;
+        }
+
+        .port-version {
+            font-size: 0.8rem;
+            color: #888;
+            margin-left: 0.3rem;
+        }
+
+        /* Vulnerability Info */
+        .vulnerability-info {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .risk-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .risk-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .risk-critical {
+            background: #ff0055;
+            color: white;
+        }
+
+        .risk-high {
+            background: #ff4444;
+            color: white;
+        }
+
+        .risk-medium {
+            background: #ffaa00;
+            color: black;
+        }
+
+        .risk-low {
+            background: #00ff88;
+            color: black;
+        }
+
+        .risk-info {
+            background: #00fff5;
+            color: black;
+        }
+
+        .cve-badge {
+            background: rgba(255, 170, 0, 0.2);
+            border: 1px solid #ffaa00;
+            color: #ffaa00;
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+        }
+
+        .vuln-desc {
+            font-size: 0.8rem;
+            color: #b0b0b0;
+        }
+
+        /* Raw JSON */
+        .raw-json {
+            margin-top: 1.5rem;
+        }
+
+        .raw-json summary {
+            color: #00fff5;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .json-pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #b0b0b0;
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            max-height: 300px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(26, 30, 36, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            border-radius: 20px;
+        }
+
+        .empty-icon {
+            font-size: 5rem;
+            color: #00fff5;
+            margin-bottom: 1rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .sample-preview {
+            margin-top: 2rem;
+        }
+
+        .sample-scan {
+            max-width: 300px;
+            margin: 1rem auto;
+            padding: 1rem;
+            background: rgba(10, 12, 15, 0.8);
+            border: 1px solid rgba(0, 255, 245, 0.2);
+            border-radius: 10px;
+        }
+
+        .sample-ip {
+            color: #00fff5;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .sample-ports {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .sample-port {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .sample-port.open {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+        }
+
+        .sample-port.closed {
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid #ff0055;
+            color: #ff0055;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #00fff5, #9d00ff);
+            color: #0a0c0f;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            z-index: 9999;
+            animation: slideInRight 0.3s ease;
+            box-shadow: 0 0 30px rgba(0, 255, 245, 0.3);
+        }
+
+        .notification-success {
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+        }
+
+        .notification-error {
+            background: linear-gradient(135deg, #ff0055, #cc0044);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Animated Background -->
+    <div class="cyber-background">
+        <div class="matrix-rain"></div>
+        <div class="grid-overlay"></div>
+        <div class="scan-line"></div>
+        <div class="floating-elements">
+            <div class="floating-shield">🛡️</div>
+            <div class="floating-lock">🔒</div>
+            <div class="floating-globe">🌐</div>
+            <div class="floating-binary">010101</div>
+            <div class="floating-scan">📡</div>
+        </div>
+    </div>
+
+    <!-- MINIMALIST NAVIGATION - Clean & Professional -->
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Page Header -->
+        <div class="history-header-section">
+            <h1 class="glitch-text" data-text="Scan History">Scan History</h1>
+            <p class="header-subtitle">Track and analyze all your network scans</p>
+            
+            <!-- Stats Cards -->
+            <div class="history-stats">
+                <div class="stat-card">
+                    <i class="fas fa-search stat-icon"></i>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalScans">{{ history|length }}</span>
+                        <span class="stat-label">Total Scans</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-shield-alt stat-icon"></i>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalPorts">
+                            {% set ns = namespace(total=0) %}
+                            {% for scan in history %}
+                                {% if scan.parsed_result and scan.parsed_result.ports %}
+                                    {% set ns.total = ns.total + scan.parsed_result.ports|length %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ ns.total }}
+                        </span>
+                        <span class="stat-label">Total Ports</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-exclamation-triangle stat-icon"></i>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalRisks">
+                            {% set ns = namespace(total=0) %}
+                            {% for scan in history %}
+                                {% if scan.parsed_result and scan.parsed_result.ports %}
+                                    {% for port in scan.parsed_result.ports %}
+                                        {% if port.vulnerability and port.vulnerability.risk in ['Critical', 'High'] %}
+                                            {% set ns.total = ns.total + 1 %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ ns.total }}
+                        </span>
+                        <span class="stat-label">High Risks</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="search-section">
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="searchInput" class="search-input" 
+                       placeholder="Search by IP address, port, or service...">
+                <button class="search-clear" onclick="clearSearch()" style="display: none;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="filter-options">
+                <select id="filterRisk" class="filter-select">
+                    <option value="all">All Risks</option>
+                    <option value="critical">Critical Only</option>
+                    <option value="high">High Only</option>
+                    <option value="medium">Medium Only</option>
+                    <option value="low">Low Only</option>
+                </select>
+                
+                <button onclick="exportAllScans()" class="btn-primary" title="Export all scans as PDF Document">
+                    <i class="fas fa-file-pdf"></i> Export All (PDF)
+                </button>
+                
+                <button onclick="clearAllHistory()" class="btn-danger" 
+                        {% if not history %}disabled{% endif %}>
+                    <i class="fas fa-trash"></i> Clear All
+                </button>
+            </div>
+        </div>
+
+        <!-- History List -->
+        <div class="history-timeline" id="historyList">
+            {% if history %}
+                {% for scan in history %}
+                <div class="history-item" data-scan-id="{{ scan.id }}" data-ip="{{ scan.ip_address }}">
+                    <div class="history-header" onclick="toggleHistory({{ scan.id }})">
+                        <div class="header-left">
+                            <div class="ip-address">
+                                <i class="fas fa-network-wired"></i>
+                                <span class="ip-text">{{ scan.ip_address }}</span>
+                                {% if scan.parsed_result and scan.parsed_result.scan_type %}
+                                    <span class="scan-badge">{{ scan.parsed_result.scan_type|upper }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if scan.parsed_result and scan.parsed_result.ports %}
+                                {% set open_ports = scan.parsed_result.ports|selectattr('state', 'equalto', 'open')|list %}
+                                {% set critical_ports = scan.parsed_result.ports|selectattr('vulnerability.risk', 'equalto', 'Critical')|list %}
+                                
+                                {% if open_ports|length > 0 %}
+                                    <span class="open-badge">
+                                        <i class="fas fa-door-open"></i> {{ open_ports|length }} open
+                                    </span>
+                                {% endif %}
+                                
+                                {% if critical_ports|length > 0 %}
+                                    <span class="critical-badge">
+                                        <i class="fas fa-exclamation-triangle"></i> {{ critical_ports|length }} critical
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                            
+                            <span class="scan-time">
+                                <i class="far fa-calendar-alt"></i> {{ scan.scan_date }}
+                            </span>
+                        </div>
+                        <span class="history-toggle">
+                            <i class="fas fa-chevron-down"></i>
+                        </span>
+                    </div>
+                    
+                    <div id="history-{{ scan.id }}" class="history-details" style="display: none;">
+                        <div class="details-header">
+                            <h4>Scan Details</h4>
+                            <div class="details-actions">
+                                <button onclick="copyResults({{ scan.id }})" class="btn-icon" title="Copy to clipboard">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button onclick="downloadPDF({{ scan.id }})" class="btn-icon" title="Download PDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                </button>
+                                <button onclick="deleteScan({{ scan.id }})" class="btn-icon btn-icon-danger" title="Delete scan">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {% if scan.parsed_result %}
+                            <!-- Scan Summary -->
+                            <div class="scan-summary">
+                                <div class="summary-item">
+                                    <span class="summary-label">Target</span>
+                                    <span class="summary-value">{{ scan.parsed_result.target }}</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">Scan Time</span>
+                                    <span class="summary-value">{{ scan.parsed_result.scan_time }}</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">Scan Type</span>
+                                    <span class="summary-value">{{ scan.parsed_result.scan_type|default('TCP')|upper }}</span>
+                                </div>
+                                {% if scan.parsed_result.summary %}
+                                <div class="summary-item">
+                                    <span class="summary-label">Open/Closed</span>
+                                    <span class="summary-value">{{ scan.parsed_result.summary.open }}/{{ scan.parsed_result.summary.closed }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Ports Grid -->
+                            {% if scan.parsed_result.ports %}
+                                <h5 style="color: #00fff5; margin: 1rem 0;">Open Ports & Services</h5>
+                                <div class="ports-grid">
+                                    {% for port in scan.parsed_result.ports %}
+                                    <div class="port-card {{ port.state }}">
+                                        <div class="port-header">
+                                            <span class="port-number">Port {{ port.port }}</span>
+                                            <span class="port-protocol">{{ port.protocol|default('TCP') }}</span>
+                                            <span class="port-state">{{ port.state|upper }}</span>
+                                        </div>
+                                        <div class="port-service">
+                                            <i class="fas fa-cog"></i> {{ port.service|default('unknown') }}
+                                            {% if port.version and port.version != 'unknown' %}
+                                                <span class="port-version">{{ port.version }}</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        {% if port.vulnerability %}
+                                        <div class="vulnerability-info">
+                                            <div class="risk-row">
+                                                <span class="risk-badge risk-{{ port.vulnerability.risk|lower }}">
+                                                    {{ port.vulnerability.risk }}
+                                                </span>
+                                                {% if port.vulnerability.cve and port.vulnerability.cve != 'N/A' %}
+                                                    <span class="cve-badge">{{ port.vulnerability.cve }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <span class="vuln-desc">{{ port.vulnerability.desc }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="no-data">No port data available in this scan</p>
+                            {% endif %}
+                            
+                            <!-- Raw JSON (Collapsible) -->
+                            <details class="raw-json">
+                                <summary><i class="fas fa-code"></i> View Raw JSON Data</summary>
+                                <pre class="json-pre">{{ scan.scan_result }}</pre>
+                            </details>
+                            
+                        {% else %}
+                            <!-- Fallback for unparsed JSON -->
+                            <p class="no-data">Parsed data not available. Showing raw JSON:</p>
+                            <pre class="json-pre">{{ scan.scan_result }}</pre>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h2>No Scans Yet</h2>
+                    <p>Start your first network scan to see history here</p>
+                    <a href="/dashboard" class="btn-primary">
+                        <i class="fas fa-rocket"></i> Start Scanning
+                    </a>
+                    
+                    <div class="sample-preview">
+                        <p>Sample of what you'll see:</p>
+                        <div class="sample-scan">
+                            <div class="sample-ip">192.168.1.1</div>
+                            <div class="sample-ports">
+                                <span class="sample-port open">22</span>
+                                <span class="sample-port open">80</span>
+                                <span class="sample-port open">443</span>
+                                <span class="sample-port closed">3306</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // ==================== TOGGLE HISTORY DETAILS ====================
+        function toggleHistory(id) {
+            const element = document.getElementById('history-' + id);
+            const historyItem = element.closest('.history-item');
+            
+            if (element.style.display === 'none') {
+                element.style.display = 'block';
+                historyItem.classList.add('active');
+            } else {
+                element.style.display = 'none';
+                historyItem.classList.remove('active');
+            }
+        }
+
+        // ==================== SEARCH FUNCTIONALITY ====================
+        const searchInput = document.getElementById('searchInput');
+        const historyItems = document.querySelectorAll('.history-item');
+        
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            let visibleCount = 0;
+            
+            historyItems.forEach(item => {
+                const ip = item.dataset.ip.toLowerCase();
+                const details = item.querySelector('.history-details')?.textContent.toLowerCase() || '';
+                
+                if (ip.includes(searchTerm) || details.includes(searchTerm)) {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Show/hide clear button
+            document.querySelector('.search-clear').style.display = 
+                searchTerm ? 'block' : 'none';
+        });
+
+        function clearSearch() {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+        }
+
+        // ==================== RISK FILTER ====================
+        document.getElementById('filterRisk').addEventListener('change', function() {
+            const filter = this.value;
+            
+            historyItems.forEach(item => {
+                if (filter === 'all') {
+                    item.style.display = 'block';
+                    return;
+                }
+                
+                const details = item.querySelector('.history-details')?.textContent.toLowerCase() || '';
+                if (details.includes(filter)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        // ==================== COPY RESULTS ====================
+        function copyResults(id) {
+            const element = document.getElementById('history-' + id);
+            const jsonElement = element.querySelector('.json-pre') || element.querySelector('pre');
+            const text = jsonElement ? jsonElement.textContent : '';
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Results copied to clipboard!', 'success');
+            }).catch(() => {
+                showNotification('Failed to copy', 'error');
+            });
+        }
+
+        // ==================== DOWNLOAD PDF ====================
+        function downloadPDF(id) {
+            window.open(`/portscan/export/${id}`, '_blank');
+        }
+
+        // ==================== DELETE SCAN ====================
+        function deleteScan(id) {
+            if (confirm('Are you sure you want to delete this scan?')) {
+                fetch(`/delete-scan/${id}`, { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Scan deleted successfully!', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Error: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showNotification('Error deleting scan', 'error');
+                });
+            }
+        }
+
+        // ==================== EXPORT ALL SCANS ====================
+        function exportAllScans() {
+            window.open('/portscan/export_all', '_blank');
+        }
+
+        // ==================== CLEAR ALL HISTORY ====================
+        function clearAllHistory() {
+            if (confirm('Are you sure you want to delete ALL scan history? This cannot be undone!')) {
+                fetch('/clear-history', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('All scans deleted!', 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Error clearing history', 'error');
+                    }
+                })
+                .catch(error => {
+                    showNotification('Error clearing history', 'error');
+                });
+            }
+        }
+
+        // ==================== SHOW NOTIFICATION ====================
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                                      type === 'error' ? 'exclamation-circle' : 
+                                      type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // ==================== KEYBOARD SHORTCUTS ====================
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+F to focus search
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            
+            // Escape to clear search
+            if (e.key === 'Escape') {
+                clearSearch();
+            }
+        });
+    </script>
+{% endblock %}

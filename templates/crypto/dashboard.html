@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-header fade-in">
+    <h1>Your <span>Encrypted</span> Vault</h1>
+    <a href="{{ url_for('crypto.upload') }}" class="btn btn-primary">+ Encrypt New File</a>
+</div>
+
+<div class="dashboard-grid fade-in">
+    <div class="card file-list-card">
+        <h3>Secured Files</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Filename</th>
+                        <th>Algorithm</th>
+                        <th>Key</th>
+                        <th>Size</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in files %}
+                    <tr>
+                        <td>{{ file.original_filename }}</td>
+                        <td><span class="badge">{{ file.encryption_algorithm }}/{{ file.cipher_mode }}</span></td>
+                        <td>
+                            {% if file.stored_decryption_key %}
+                            <div class="key-container">
+                                <code class="hidden-key" id="key-{{ file.id }}"
+                                    data-key="{{ file.stored_decryption_key }}">••••••••••••••••</code>
+                                <button type="button" class="btn-icon copy-btn"
+                                    onclick="copyKeyText('{{ file.stored_decryption_key }}', this)" title="Copy Key">
+                                    📋
+                                </button>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">Not stored</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ (file.file_size / 1024) | round(2) }} KB</td>
+                        <td>{{ file.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td class="actions">
+                            <a href="{{ url_for('crypto.download_encrypted', file_id=file.id) }}"
+                                class="btn-sm btn-success">Download Encrypted</a>
+                            <button type="button" class="btn-sm btn-share"
+                                onclick="openShareModal({{ file.id }}, '{{ file.original_filename|truncate(30) }}')">Share</button>
+                            <form action="{{ url_for('crypto.delete', file_id=file.id) }}" method="POST"
+                                style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn-sm btn-danger"
+                                    onclick="return confirm('Delete this file?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 40px;">No files encrypted yet. Start by
+                            uploading a file!</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card stats-card">
+        <h3>Algorithm Benchmark</h3>
+        <p>Test encryption and decryption speed for different algorithms on sample text.</p>
+        <div class="workbench">
+            <textarea id="test-text"
+                placeholder="Enter text to encrypt test...">Secret message for benchmarking.</textarea>
+            <div class="workbench-controls">
+                <select id="bench-algo">
+                    <option value="AES">AES</option>
+                    <option value="CHACHA20">ChaCha20</option>
+                    <option value="BLOWFISH">Blowfish</option>
+                    <option value="DES">DES (Legacy)</option>
+                </select>
+                <button id="run-bench" class="btn btn-primary">Run Encrypt + Decrypt</button>
+            </div>
+            <div id="bench-result" class="result-box">
+                - Results will appear here -
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 40px 0;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 2px solid var(--border);
+    }
+
+    td {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .badge {
+        background: var(--primary);
+        color: #000;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .btn-sm {
+        padding: 5px 10px;
+        border-radius: 4px;
+        border: none;
+        font-size: 0.8rem;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-success {
+        background: #00ff88;
+        color: #000;
+    }
+
+    .btn-danger {
+        background: var(--accent);
+        color: #fff;
+    }
+
+    .workbench textarea {
+        width: 100%;
+        height: 100px;
+        margin: 15px 0;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--border);
+        color: #fff;
+        padding: 10px;
+        border-radius: 8px;
+        font-family: monospace;
+        resize: none;
+        box-sizing: border-box;
+    }
+
+    .key-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .hidden-key {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        user-select: none;
+    }
+
+    .btn-icon {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    .text-muted {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        font-style: italic;
+    }
+
+    .workbench-controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .result-box {
+        background: rgba(0, 242, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px dashed var(--primary);
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+
+    .btn-share {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+    }
+
+    /* Share Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-box {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px;
+        width: 400px;
+        max-width: 90vw;
+    }
+
+    .modal-box h3 {
+        margin: 0 0 8px;
+        color: var(--text);
+    }
+
+    .modal-box p {
+        margin: 0 0 20px;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .modal-input {
+        width: 100%;
+        box-sizing: border-box;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        margin-bottom: 16px;
+        outline: none;
+    }
+
+    .modal-input:focus {
+        border-color: #6366f1;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+</style>
+
+<script>
+    async function copyKeyText(key, btnElement) {
+        try {
+            await navigator.clipboard.writeText(key);
+            const originalText = btnElement.innerText;
+            btnElement.innerText = '✔️';
+            setTimeout(() => {
+                btnElement.innerText = originalText;
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy key: ', err);
+            alert('Failed to copy key.');
+        }
+    }
+
+    document.getElementById('run-bench')?.addEventListener('click', async () => {
+        const text = document.getElementById('test-text').value;
+        const algo = document.getElementById('bench-algo').value;
+        const resultBox = document.getElementById('bench-result');
+
+        resultBox.innerHTML = 'Benchmarking...';
+
+        try {
+            const response = await fetch('/api/decrypt/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ text, algorithm: algo, mode: 'CBC', key_size: 256 })
+            });
+            const data = await response.json();
+            if (data.success) {
+                resultBox.innerHTML = `Algorithm: ${algo}<br>Encrypt: ${(data.encrypt_time * 1000).toFixed(4)} ms<br>Decrypt: ${(data.decrypt_time * 1000).toFixed(4)} ms<br>Size: ${data.ciphertext_len} bytes<br>Round-trip OK: ${data.matches}`;
+            } else {
+                resultBox.innerHTML = `Error: ${data.error}`;
+            }
+        } catch (e) {
+            resultBox.innerHTML = `Request failed: ${e.message}`;
+        }
+    });
+</script>
+
+<!-- Share File Modal -->
+<div class="modal-overlay" id="shareModal" onclick="if(event.target===this)closeShareModal()">
+    <div class="modal-box">
+        <h3>🔗 Share File</h3>
+        <p id="shareModalFileName">Share this file with another user by their email.</p>
+        <form id="shareForm" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="email" name="recipient_email" class="modal-input" placeholder="Recipient's email address"
+                required autocomplete="off">
+            <div class="modal-actions">
+                <button type="button" class="btn-sm btn-danger" onclick="closeShareModal()">Cancel</button>
+                <button type="submit" class="btn-sm btn-share">Share File</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openShareModal(fileId, fileName) {
+        document.getElementById('shareModalFileName').textContent = 'Sharing: ' + fileName;
+        document.getElementById('shareForm').action = '/share/' + fileId;
+        document.getElementById('shareModal').classList.add('active');
+    }
+    function closeShareModal() {
+        document.getElementById('shareModal').classList.remove('active');
+    }
+</script>
+{% endblock %}

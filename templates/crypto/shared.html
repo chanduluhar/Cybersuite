@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="shared-page">
+    <div class="shared-hero">
+        <div class="hero-glow"></div>
+        <h1 class="shared-title"><span>Shared</span> With Me</h1>
+        <p class="shared-subtitle">Files encrypted and shared with you by other users. Enter the decryption key to
+            download.</p>
+    </div>
+
+    {% if shares %}
+    <div class="shared-grid">
+        {% for share, file, sender in shares %}
+        <div class="shared-card">
+            <div class="shared-card-header">
+                <div class="sender-avatar">{{ sender.username[0].upper() }}</div>
+                <div class="sender-info">
+                    <span class="sender-name">{{ sender.username }}</span>
+                    <span class="shared-date">Shared {{ file.created_at.strftime('%b %d, %Y') }}</span>
+                </div>
+                <span class="algo-tag">{{ file.encryption_algorithm }}/{{ file.cipher_mode }}</span>
+            </div>
+
+            <div class="shared-card-body">
+                <div class="file-name-row">
+                    <span class="file-icon">📁</span>
+                    <span class="file-name" title="{{ file.original_filename }}">{{ file.original_filename |
+                        truncate(40) }}</span>
+                </div>
+                <div class="file-meta">
+                    <span>{{ (file.file_size / 1024) | round(1) }} KB</span>
+                    <span>·</span>
+                    <span>{{ file.key_size }}-bit key</span>
+                </div>
+            </div>
+
+            <form action="{{ url_for('crypto.download_shared', share_id=share.id) }}" method="POST" class="decrypt-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="key-input-row">
+                    <input type="text" name="decryption_key" placeholder="Enter decryption key from sender…"
+                        class="key-input" required autocomplete="off">
+                    <button type="submit" class="decrypt-btn">
+                        <span>🔓</span> Decrypt & Download
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>No files shared with you yet</h3>
+        <p>When someone shares an encrypted file with your email address, it will appear here.</p>
+        <a href="{{ url_for('crypto.decrypt_page') }}" class="btn btn-primary">Go to Decrypt Page</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .shared-page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .shared-hero {
+        text-align: center;
+        margin-bottom: 50px;
+        position: relative;
+    }
+
+    .hero-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 400px;
+        height: 200px;
+        background: radial-gradient(ellipse, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .shared-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 12px;
+    }
+
+    .shared-title span {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .shared-subtitle {
+        color: var(--text-muted);
+        font-size: 1rem;
+        max-width: 500px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .shared-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .shared-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .shared-card:hover {
+        border-color: rgba(99, 102, 241, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .shared-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .sender-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    .sender-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sender-name {
+        font-weight: 600;
+        color: var(--text);
+        font-size: 0.95rem;
+    }
+
+    .shared-date {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .algo-tag {
+        background: rgba(99, 102, 241, 0.15);
+        color: #6366f1;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    .shared-card-body {
+        margin-bottom: 16px;
+    }
+
+    .file-name-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 6px;
+    }
+
+    .file-icon {
+        font-size: 1.3rem;
+    }
+
+    .file-name {
+        font-weight: 600;
+        color: var(--text);
+        font-size: 1rem;
+    }
+
+    .file-meta {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        display: flex;
+        gap: 6px;
+        padding-left: 34px;
+    }
+
+    .key-input-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .key-input {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        padding: 10px 16px;
+        font-size: 0.9rem;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .key-input:focus {
+        border-color: #6366f1;
+    }
+
+    .decrypt-btn {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s, transform 0.1s;
+        white-space: nowrap;
+    }
+
+    .decrypt-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .decrypt-btn:active {
+        transform: translateY(0);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: var(--text-muted);
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+        font-size: 1.4rem;
+        color: var(--text);
+        margin-bottom: 10px;
+    }
+
+    .empty-state p {
+        margin-bottom: 30px;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,2271 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="encrypt-page">
+    <!-- Animated background -->
+    <div class="encrypt-particles"></div>
+    <div class="encrypt-grid"></div>
+    <div class="encrypt-orb"></div>
+    
+    <div class="encrypt-wrapper">
+        <!-- Header section with encryption animation -->
+        <div class="page-header" data-animate="fade-down">
+            <div class="header-icon-group">
+                <div class="header-icon encrypt-icon">
+                    <span class="icon-file">📄</span>
+                    <span class="icon-arrow">→</span>
+                    <span class="icon-lock">🔒</span>
+                    <span class="icon-sparkles">✨</span>
+                </div>
+                <div class="icon-ring"></div>
+                <div class="icon-pulse"></div>
+            </div>
+            <h1 class="page-title">
+                <span class="title-word">Encrypt</span>
+                <span class="title-word accent">your files</span>
+            </h1>
+            <p class="page-subtitle">Secure your data with military-grade encryption algorithms</p>
+            
+            <!-- Algorithm quick stats -->
+            <div class="quick-stats">
+                <div class="stat-chip" data-tooltip="Advanced Encryption Standard">
+                    <span class="stat-icon">🔐</span>
+                    <span class="stat-label">AES-256</span>
+                </div>
+                <div class="stat-chip" data-tooltip="ChaCha20-Poly1305">
+                    <span class="stat-icon">⚡</span>
+                    <span class="stat-label">ChaCha20</span>
+                </div>
+                <div class="stat-chip" data-tooltip="Blowfish">
+                    <span class="stat-icon">🐡</span>
+                    <span class="stat-label">Blowfish</span>
+                </div>
+                <div class="stat-chip" data-tooltip="Triple DES">
+                    <span class="stat-icon">🔢</span>
+                    <span class="stat-label">3DES</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main encryption card -->
+        <div class="encrypt-card" data-animate="fade-up">
+            <div class="card-shine"></div>
+            <div class="card-particles"></div>
+            
+            <div class="card-header">
+                <h2 class="animate-title">Choose encryption settings</h2>
+                <div class="header-badge">
+                    <span class="badge-dot"></span>
+                    <span class="badge-text">Client-side encryption</span>
+                </div>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" id="encryptForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <!-- File upload area with enhanced design -->
+                <div class="upload-area" id="dropZone">
+                    <input type="file" name="file" id="fileInput" required style="display: none;">
+                    
+                    <div class="upload-content" id="uploadContent">
+                        <!-- Default state -->
+                        <div class="upload-default" id="uploadDefault">
+                            <div class="upload-icon">
+                                <span class="icon-upload">📤</span>
+                                <span class="icon-glow"></span>
+                            </div>
+                            <div class="upload-text">
+                                <span class="text-primary">Choose a file</span>
+                                <span class="text-secondary">or drag it here</span>
+                            </div>
+                            <div class="upload-hint">
+                                Max file size: 100MB · All formats supported
+                            </div>
+                        </div>
+
+                        <!-- File selected state -->
+                        <div class="upload-file-selected" id="uploadSelected" style="display: none;">
+                            <div class="file-preview">
+                                <div class="file-icon-wrapper">
+                                    <span class="file-icon" id="fileIcon">📄</span>
+                                    <div class="file-type-badge" id="fileType">FILE</div>
+                                </div>
+                                <div class="file-info">
+                                    <span class="file-name" id="selectedFileName"></span>
+                                    <div class="file-meta">
+                                        <span class="file-size" id="selectedFileSize"></span>
+                                        <span class="meta-separator">•</span>
+                                        <span class="file-modified" id="selectedFileModified"></span>
+                                    </div>
+                                </div>
+                                <button type="button" class="file-remove" onclick="removeFile()" aria-label="Remove file">
+                                    <span>✕</span>
+                                </button>
+                            </div>
+                            
+                            <!-- File analysis -->
+                            <div class="file-analysis" id="fileAnalysis">
+                                <div class="analysis-header">
+                                    <span class="analysis-title">File analysis</span>
+                                    <span class="analysis-badge" id="analysisStatus">Ready</span>
+                                </div>
+                                <div class="analysis-grid">
+                                    <div class="analysis-item">
+                                        <span class="item-label">Type</span>
+                                        <span class="item-value" id="fileMime">-</span>
+                                    </div>
+                                    <div class="analysis-item">
+                                        <span class="item-label">Size</span>
+                                        <span class="item-value" id="fileSizeFormatted">-</span>
+                                    </div>
+                                    <div class="analysis-item">
+                                        <span class="item-label">Modified</span>
+                                        <span class="item-value" id="fileDate">-</span>
+                                    </div>
+                                    <div class="analysis-item">
+                                        <span class="item-label">Entropy</span>
+                                        <span class="item-value" id="fileEntropy">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload progress -->
+                    <div class="upload-progress" id="uploadProgress" style="display: none;">
+                        <div class="progress-ring-container">
+                            <svg width="80" height="80" viewBox="0 0 80 80">
+                                <circle class="progress-ring-bg" cx="40" cy="40" r="36" />
+                                <circle class="progress-ring-fill" cx="40" cy="40" r="36" 
+                                        stroke-dasharray="226.2" stroke-dashoffset="226.2" 
+                                        id="progressRing" />
+                            </svg>
+                            <span class="progress-percent" id="progressPercent">0%</span>
+                        </div>
+                        <span class="progress-text" id="progressText">Analyzing file...</span>
+                        <span class="progress-subtext" id="progressSubtext">Preparing for encryption</span>
+                    </div>
+                </div>
+
+                <!-- Encryption settings panel -->
+                <div class="settings-panel">
+                    <div class="panel-header animate-panel">
+                        <span class="panel-icon">⚙️</span>
+                        <span class="panel-title">Encryption settings</span>
+                        <span class="panel-badge">Customize</span>
+                    </div>
+
+                    <div class="form-grid">
+                        <!-- Algorithm selection with cards - ANIMATED -->
+                        <div class="form-group algorithm-group animate-card">
+                            <label class="group-label">
+                                <span>Algorithm</span>
+                                <span class="label-hint">Select encryption standard</span>
+                            </label>
+                            <div class="algorithm-cards">
+                                <div class="algo-card selected" data-algo="AES" onclick="selectAlgorithm('AES', this)">
+                                    <div class="algo-icon">🔐</div>
+                                    <div class="algo-info">
+                                        <span class="algo-name">AES</span>
+                                        <span class="algo-desc">Industry standard</span>
+                                    </div>
+                                    <div class="algo-check">✓</div>
+                                </div>
+                                <div class="algo-card" data-algo="CHACHA20" onclick="selectAlgorithm('CHACHA20', this)">
+                                    <div class="algo-icon">⚡</div>
+                                    <div class="algo-info">
+                                        <span class="algo-name">ChaCha20</span>
+                                        <span class="algo-desc">Modern stream</span>
+                                    </div>
+                                    <div class="algo-check">✓</div>
+                                </div>
+                                <div class="algo-card" data-algo="BLOWFISH" onclick="selectAlgorithm('BLOWFISH', this)">
+                                    <div class="algo-icon">🐡</div>
+                                    <div class="algo-info">
+                                        <span class="algo-name">Blowfish</span>
+                                        <span class="algo-desc">Fast & robust</span>
+                                    </div>
+                                    <div class="algo-check">✓</div>
+                                </div>
+                                <div class="algo-card" data-algo="3DES" onclick="selectAlgorithm('3DES', this)">
+                                    <div class="algo-icon">🔢</div>
+                                    <div class="algo-info">
+                                        <span class="algo-name">3DES</span>
+                                        <span class="algo-desc">Triple strength</span>
+                                    </div>
+                                    <div class="algo-check">✓</div>
+                                </div>
+                            </div>
+                            <select name="algorithm" id="algoSelect" style="display: none;">
+                                <option value="AES" selected>AES</option>
+                                <option value="CHACHA20">ChaCha20</option>
+                                <option value="BLOWFISH">Blowfish</option>
+                                <option value="3DES">3DES</option>
+                            </select>
+                        </div>
+
+                        <!-- ========== CIPHER MODE - BILKUL SIMPLE, SIRF HTML ========== -->
+                        <div class="form-group">
+                            <label class="group-label">
+                                <span>Cipher mode</span>
+                                <span class="label-hint">Operation mode</span>
+                            </label>
+                            <select name="mode" id="modeSelect" class="simple-select" required>
+                                <option value="CBC">CBC (Cipher Block Chaining)</option>
+                                <option value="GCM">GCM (Authenticated Encryption)</option>
+                                <option value="CTR">CTR (Counter)</option>
+                                <option value="CFB">CFB (Cipher Feedback)</option>
+                                <option value="OFB">OFB (Output Feedback)</option>
+                                <option value="POLY1305">POLY1305 (Authenticated Stream)</option>
+                                <option value="ECB" disabled style="color: #ef4444;">ECB (Not Secure - Disabled)</option>
+                            </select>
+                        </div>
+                        <!-- ========== CIPHER MODE END ========== -->
+
+                        <!-- Key size selection - ANIMATED -->
+                        <div class="form-group animate-card">
+                            <label class="group-label">
+                                <span>Key size</span>
+                                <span class="label-hint">Encryption strength</span>
+                            </label>
+                            <div class="key-size-selector">
+                                <div class="key-option selected" data-size="256" onclick="selectKeySize(256, this)">
+                                    <span class="key-value">256-bit</span>
+                                    <span class="key-badge">Recommended</span>
+                                </div>
+                                <div class="key-option" data-size="192" onclick="selectKeySize(192, this)">
+                                    <span class="key-value">192-bit</span>
+                                </div>
+                                <div class="key-option" data-size="128" onclick="selectKeySize(128, this)">
+                                    <span class="key-value">128-bit</span>
+                                </div>
+                            </div>
+                            <select name="key_size" id="keySizeSelect" style="display: none;">
+                                <option value="256" selected>256</option>
+                                <option value="192">192</option>
+                                <option value="128">128</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Algorithm info panel - ANIMATED -->
+                    <div class="algo-info-panel animate-panel" id="algoInfoPanel">
+                        <div class="info-header">
+                            <span class="info-icon">📋</span>
+                            <span class="info-title">AES-256-CBC</span>
+                            <span class="info-tag">Recommended</span>
+                        </div>
+                        <div class="info-body">
+                            <p class="info-description" id="algoDescription">
+                                Advanced Encryption Standard with 256-bit key in CBC mode. 
+                                The industry standard for secure data encryption.
+                            </p>
+                            <div class="info-specs">
+                                <div class="spec-item">
+                                    <span class="spec-label">Security</span>
+                                    <span class="spec-value high">High</span>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">Speed</span>
+                                    <span class="spec-value medium">Medium</span>
+                                </div>
+                                <div class="spec-item">
+                                    <span class="spec-label">Compatibility</span>
+                                    <span class="spec-value high">Universal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance estimate - ANIMATED -->
+                    <div class="performance-panel animate-panel" id="performancePanel">
+                        <div class="performance-header">
+                            <span class="perf-icon">⚡</span>
+                            <span class="perf-title">Estimated performance</span>
+                        </div>
+                        <div class="performance-bars">
+                            <div class="perf-bar">
+                                <span class="bar-label">Encryption speed</span>
+                                <div class="bar-container">
+                                    <div class="bar-fill" id="speedBar" style="width: 75%"></div>
+                                </div>
+                                <span class="bar-value" id="speedValue">75 MB/s</span>
+                            </div>
+                            <div class="perf-bar">
+                                <span class="bar-label">Memory usage</span>
+                                <div class="bar-container">
+                                    <div class="bar-fill" id="memoryBar" style="width: 30%"></div>
+                                </div>
+                                <span class="bar-value" id="memoryValue">30 MB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security summary - ANIMATED -->
+                <div class="security-summary animate-panel">
+                    <div class="summary-item">
+                        <span class="summary-icon">🔑</span>
+                        <span class="summary-text">PBKDF2 key derivation (600k iterations)</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-icon">🧂</span>
+                        <span class="summary-text">Random salt per encryption</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-icon">📊</span>
+                        <span class="summary-text">IV generated automatically</span>
+                    </div>
+                </div>
+
+                <!-- Submit button - ANIMATED -->
+                <button type="submit" class="encrypt-submit-btn animate-button" id="submitBtn" disabled>
+                    <span class="btn-content">
+                        <span class="btn-text">Start encryption</span>
+                        <span class="btn-icon">🔒</span>
+                    </span>
+                    <span class="btn-loader">
+                        <span class="loader-dot"></span>
+                        <span class="loader-dot"></span>
+                        <span class="loader-dot"></span>
+                    </span>
+                    <span class="btn-glow"></span>
+                    <span class="btn-shine"></span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Encrypted files section - FULLY ANIMATED -->
+        <div class="files-card" data-animate="fade-up" data-delay="200">
+            <div class="files-header">
+                <div class="files-title-group">
+                    <h3 class="animate-title">Your encrypted files</h3>
+                    <span class="files-count animate-badge">{{ files|length }}</span>
+                </div>
+                <div class="files-actions">
+                    <button class="refresh-btn animate-button" onclick="refreshFiles()" title="Refresh list">
+                        <span class="refresh-icon">↻</span>
+                    </button>
+                </div>
+            </div>
+
+            {% if files %}
+            <div class="files-grid">
+                {% for file in files %}
+                <div class="file-card animate-file-card" data-file-id="{{ file.id }}" style="animation-delay: {{ loop.index0 * 0.1 }}s">
+                    <div class="file-card-glow"></div>
+                    
+                    <div class="file-card-header">
+                        <div class="file-type-icon">
+                            {% if file.encryption_algorithm == 'AES' %}
+                            <span class="algo-icon aes">🔐</span>
+                            {% elif file.encryption_algorithm == 'CHACHA20' %}
+                            <span class="algo-icon chacha">⚡</span>
+                            {% elif file.encryption_algorithm == 'BLOWFISH' %}
+                            <span class="algo-icon blowfish">🐡</span>
+                            {% else %}
+                            <span class="algo-icon">📁</span>
+                            {% endif %}
+                        </div>
+                        <div class="file-card-info">
+                            <div class="file-original" title="{{ file.original_filename }}">
+                                {{ file.original_filename|truncate(20) }}
+                            </div>
+                            <div class="file-encrypted">
+                                <code>{{ file.encrypted_filename|truncate(15) }}</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="file-card-body">
+                        <div class="file-meta-row">
+                            <span class="meta-label">Algorithm:</span>
+                            <span class="meta-value">
+                                <span class="algo-badge {{ file.encryption_algorithm|lower }}">
+                                    {{ file.encryption_algorithm }}/{{ file.cipher_mode }}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="file-meta-row">
+                            <span class="meta-label">Created:</span>
+                            <span class="meta-value">{{ file.created_at.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        {% if file.stored_decryption_key %}
+                        <div class="file-meta-row key-row">
+                            <span class="meta-label">Key:</span>
+                            <span class="meta-value">
+                                <div class="key-container">
+                                    <code class="hidden-key" id="key-{{ file.id }}" data-key="{{ file.stored_decryption_key }}">••••••••••••••••</code>
+                                    <button type="button" class="copy-btn" onclick="copyKeyText('{{ file.stored_decryption_key }}', this)" title="Copy Key">
+                                        📋
+                                    </button>
+                                </div>
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% if file.file_size %}
+                        <div class="file-meta-row">
+                            <span class="meta-label">Size:</span>
+                            <span class="meta-value">{{ (file.file_size / 1024)|round(1) }} KB</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="file-card-footer">
+                        <a href="{{ url_for('crypto.download_encrypted', file_id=file.id) }}" 
+                           class="download-btn animate-button"
+                           onclick="showDownloadAnimation(this, event)">
+                            <span class="btn-icon">↓</span>
+                            <span class="btn-text">Download</span>
+                            <span class="btn-hover-icon">↓</span>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state animate-panel">
+                <div class="empty-icon">🔐</div>
+                <div class="empty-text">No encrypted files yet</div>
+                <div class="empty-hint">Upload a file to get started</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Animation keyframes - sirf required elements ke liye */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes glowPulse {
+    0%, 100% { filter: drop-shadow(0 0 5px var(--primary-glow)); }
+    50% { filter: drop-shadow(0 0 15px var(--primary-glow)); }
+}
+
+/* Animation classes */
+[data-animate="fade-down"] {
+    animation: fadeUp 0.8s ease forwards;
+}
+
+[data-animate="fade-up"] {
+    animation: fadeUp 0.8s ease forwards;
+}
+
+.animate-title {
+    animation: slideInLeft 0.6s ease forwards;
+}
+
+.animate-panel {
+    animation: fadeUp 0.6s ease forwards;
+}
+
+.animate-card {
+    animation: scaleIn 0.5s ease forwards;
+}
+
+.animate-file-card {
+    animation: scaleIn 0.5s ease forwards;
+    animation-fill-mode: both;
+}
+
+.animate-button {
+    transition: all 0.3s ease;
+}
+
+.animate-button:hover {
+    transform: translateY(-2px);
+}
+
+.animate-badge {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* ========== SIMPLE SELECT - BILKUL SIMPLE, KOI ANIMATION NAHI ========== */
+.simple-select {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.simple-select:hover {
+    border-color: var(--primary);
+}
+
+.simple-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+.simple-select option:disabled {
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
+}
+/* ========== SIMPLE SELECT END ========== */
+
+/* Header icons animation */
+.header-icon .icon-file,
+.header-icon .icon-lock {
+    animation: float 3s ease-in-out infinite, glowPulse 2s ease-in-out infinite;
+}
+
+.header-icon .icon-arrow {
+    animation: slideArrow 2s ease-in-out infinite;
+}
+
+@keyframes slideArrow {
+    0%, 100% { transform: translateX(0); opacity: 0.5; }
+    50% { transform: translateX(10px); opacity: 1; }
+}
+
+/* Icon ring animation */
+.icon-ring {
+    animation: ringPulse 3s ease-out infinite;
+}
+
+@keyframes ringPulse {
+    0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.5; }
+    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+
+/* Card shine animation */
+.card-shine {
+    animation: shine 3s linear infinite;
+}
+
+@keyframes shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Badge pulse animation */
+.badge-dot {
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.5); }
+}
+
+/* Upload icon animation */
+.icon-upload {
+    animation: uploadBounce 2s ease-in-out infinite;
+}
+
+@keyframes uploadBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* File card glow animation */
+.file-card-glow {
+    animation: cardGlow 2s linear infinite;
+}
+
+@keyframes cardGlow {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Particle animations */
+.encrypt-particles {
+    animation: particlesDrift 30s ease-in-out infinite;
+}
+
+@keyframes particlesDrift {
+    0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.4; }
+    50% { transform: scale(1.1) rotate(180deg); opacity: 0.6; }
+}
+
+.encrypt-grid {
+    animation: gridMove 30s linear infinite;
+}
+
+@keyframes gridMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
+}
+
+.encrypt-orb {
+    animation: orbFloat 20s ease-in-out infinite;
+}
+
+@keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+    50% { transform: translate(30px, -30px) scale(1.2); opacity: 0.5; }
+}
+
+/* Progress ring animation */
+.progress-ring-fill {
+    transition: stroke-dashoffset 0.3s;
+}
+
+/* Loader dots animation */
+.loader-dot {
+    animation: loaderBounce 0.5s ease-in-out infinite;
+}
+
+@keyframes loaderBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+/* ========== CUSTOM PROPERTIES ========== */
+.encrypt-page {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-glow: rgba(99, 102, 241, 0.3);
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --surface: var(--bg-secondary);
+    --text: var(--text-primary);
+    --text-secondary: var(--text-secondary);
+    --border: var(--border-color);
+    
+    min-height: calc(100vh - 80px);
+    padding: 40px 24px;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Animated background */
+.encrypt-particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 30%, var(--primary-glow) 0%, transparent 30%),
+        radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.2) 0%, transparent 30%),
+        radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 30%);
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.encrypt-grid {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 50px 50px;
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.encrypt-orb {
+    position: fixed;
+    top: 20%;
+    right: 10%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.encrypt-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+}
+
+/* Page header */
+.page-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.header-icon-group {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 24px;
+}
+
+.header-icon {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 3rem;
+    position: relative;
+    z-index: 2;
+}
+
+.icon-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px;
+    height: 100px;
+    border: 2px solid var(--primary);
+    border-radius: 50%;
+}
+
+.page-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.title-word.accent {
+    background: linear-gradient(135deg, var(--primary), #8b5cf6, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.page-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 24px;
+}
+
+/* Quick stats */
+.quick-stats {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.stat-chip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 30px;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    cursor: help;
+}
+
+.stat-chip:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px var(--primary-glow);
+}
+
+.stat-chip[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 100;
+    margin-bottom: 8px;
+}
+
+.stat-icon {
+    font-size: 1.1rem;
+}
+
+/* Main card */
+.encrypt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 32px;
+    padding: 32px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+.card-shine {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), var(--primary-dark), var(--primary), transparent);
+}
+
+.card-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(circle at 30% 40%, var(--primary-glow) 0%, transparent 20%);
+    opacity: 0.1;
+    animation: particlesMove 15s ease-in-out infinite;
+}
+
+@keyframes particlesMove {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(2%, 2%); }
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 2;
+}
+
+.card-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.header-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 30px;
+    font-size: 0.75rem;
+    color: var(--primary);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.badge-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+}
+
+/* Upload area */
+.upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 24px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+}
+
+.upload-area:hover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.02);
+}
+
+.upload-area.dragover {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+    transform: scale(1.02);
+}
+
+.upload-icon {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 16px;
+}
+
+.icon-upload {
+    font-size: 3.5rem;
+    display: inline-block;
+}
+
+.icon-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70px;
+    height: 70px;
+    background: radial-gradient(circle, var(--primary-glow), transparent);
+    border-radius: 50%;
+    animation: glowPulse 2s ease-in-out infinite;
+}
+
+.upload-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.text-primary {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.text-secondary {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.upload-hint {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+/* File selected state */
+.upload-file-selected {
+    animation: fileAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes fileAppear {
+    0% { opacity: 0; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.file-preview {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+}
+
+.file-icon-wrapper {
+    position: relative;
+}
+
+.file-icon {
+    font-size: 2.5rem;
+    animation: fileWiggle 3s ease-in-out infinite;
+}
+
+@keyframes fileWiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(5deg); }
+    75% { transform: rotate(-5deg); }
+}
+
+.file-type-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: var(--primary);
+    color: white;
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.file-info {
+    flex: 1;
+    text-align: left;
+}
+
+.file-name {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 1rem;
+}
+
+.file-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 8px;
+}
+
+.file-remove {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.file-remove:hover {
+    background: var(--error);
+    border-color: var(--error);
+    color: white;
+    transform: rotate(90deg);
+}
+
+/* File analysis */
+.file-analysis {
+    background: var(--bg-tertiary);
+    border-radius: 16px;
+    padding: 16px;
+    animation: analysisSlide 0.5s ease;
+}
+
+@keyframes analysisSlide {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.analysis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.analysis-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.analysis-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    background: var(--success);
+    color: white;
+    border-radius: 12px;
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.analysis-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.item-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.item-value {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Upload progress */
+.upload-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    animation: progressFade 0.3s ease;
+    z-index: 10;
+}
+
+@keyframes progressFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.progress-ring-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.progress-ring-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 4;
+}
+
+.progress-ring-fill {
+    fill: none;
+    stroke: var(--primary);
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+.progress-percent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.progress-text {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.progress-subtext {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Settings panel */
+.settings-panel {
+    background: var(--bg-tertiary);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.panel-icon {
+    font-size: 1.2rem;
+}
+
+.panel-title {
+    font-weight: 600;
+    flex: 1;
+}
+
+.panel-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    background: var(--primary);
+    color: white;
+    border-radius: 12px;
+}
+
+.form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.group-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.label-hint {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+/* Algorithm cards */
+.algorithm-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.algo-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.algo-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.algo-card.selected {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+    box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+.algo-icon {
+    font-size: 1.8rem;
+}
+
+.algo-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.algo-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.algo-desc {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.algo-check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s;
+}
+
+.algo-card.selected .algo-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Key size selector */
+.key-size-selector {
+    display: flex;
+    gap: 8px;
+}
+
+.key-option {
+    flex: 1;
+    padding: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.key-option:hover {
+    border-color: var(--primary);
+}
+
+.key-option.selected {
+    border-color: var(--primary);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.key-option.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-style: dashed;
+}
+
+.key-value {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.key-badge {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    background: var(--primary);
+    color: white;
+    border-radius: 4px;
+}
+
+/* Algorithm info panel */
+.algo-info-panel {
+    margin-top: 20px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.info-tag {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    background: var(--success);
+    color: white;
+    border-radius: 4px;
+    margin-left: auto;
+}
+
+.info-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.info-specs {
+    display: flex;
+    gap: 16px;
+}
+
+.spec-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.spec-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.spec-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.spec-value.high { color: var(--success); }
+.spec-value.medium { color: var(--warning); }
+
+/* Performance panel */
+.performance-panel {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+}
+
+.performance-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.performance-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.perf-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bar-label {
+    width: 100px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.bar-container {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+.bar-value {
+    width: 50px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Security summary */
+.security-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.summary-icon {
+    font-size: 1rem;
+}
+
+/* Submit button */
+.encrypt-submit-btn {
+    position: relative;
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border: none;
+    border-radius: 16px;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.encrypt-submit-btn.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.encrypt-submit-btn.active:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px var(--primary-glow);
+}
+
+.btn-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s;
+}
+
+.btn-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s;
+}
+
+.encrypt-submit-btn.active:hover .btn-icon {
+    transform: rotate(15deg);
+}
+
+.btn-loader {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    gap: 6px;
+}
+
+.loader-dot {
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+}
+
+.encrypt-submit-btn.loading .btn-content {
+    opacity: 0;
+}
+
+.encrypt-submit-btn.loading .btn-loader {
+    display: flex;
+}
+
+.btn-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 50%, white, transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.encrypt-submit-btn.active:hover .btn-glow {
+    opacity: 0.2;
+}
+
+.btn-shine {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+}
+
+.encrypt-submit-btn.active:hover .btn-shine {
+    transform: translateX(100%);
+}
+
+/* Files card */
+.files-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 32px;
+    padding: 32px;
+    animation: cardAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
+}
+
+@keyframes cardAppear {
+    0% { opacity: 0; transform: scale(0.95) translateY(20px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.files-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.files-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.files-title-group h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.files-count {
+    padding: 2px 10px;
+    background: var(--bg-tertiary);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.refresh-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.refresh-btn:hover {
+    border-color: var(--primary);
+    transform: none;
+}
+
+/* Files grid */
+.files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.file-card {
+    position: relative;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    transition: all 0.3s;
+    overflow: hidden;
+}
+
+.file-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: 0 10px 30px var(--primary-glow);
+}
+
+.file-card-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+}
+
+.file-card:hover .file-card-glow {
+    transform: translateX(100%);
+}
+
+.file-card-header {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.file-type-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--surface);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.file-card-info {
+    flex: 1;
+}
+
+.file-original {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.file-encrypted code {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    background: var(--surface);
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.file-meta-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 0.85rem;
+}
+
+.meta-label {
+    color: var(--text-secondary);
+}
+
+.meta-value {
+    font-weight: 500;
+}
+
+.algo-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary);
+}
+
+.key-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hidden-key {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    user-select: none;
+}
+
+.copy-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover {
+    color: var(--primary);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.download-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn-hover-icon {
+    position: static;
+    opacity: 1;
+    transition: none;
+}
+
+.download-btn:hover .btn-hover-icon {
+    opacity: 1;
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 48px;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.empty-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+.empty-hint {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 2.5rem;
+    }
+
+    .quick-stats {
+        flex-wrap: wrap;
+    }
+
+    .algorithm-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .security-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .files-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .analysis-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<!-- ========== JAVASCRIPT - SIRF FUNCTIONALITY KE LIYE ========== -->
+<script>
+    async function copyKeyText(key, btnElement) {
+        try {
+            await navigator.clipboard.writeText(key);
+            const originalText = btnElement.innerText;
+            btnElement.innerText = '✔️';
+            setTimeout(() => {
+                btnElement.innerText = originalText;
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy key: ', err);
+            alert('Failed to copy key.');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadDefault = document.getElementById('uploadDefault');
+        const uploadSelected = document.getElementById('uploadSelected');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const selectedFileName = document.getElementById('selectedFileName');
+        const selectedFileSize = document.getElementById('selectedFileSize');
+        const selectedFileModified = document.getElementById('selectedFileModified');
+        const fileMime = document.getElementById('fileMime');
+        const fileSizeFormatted = document.getElementById('fileSizeFormatted');
+        const fileDate = document.getElementById('fileDate');
+        const fileEntropy = document.getElementById('fileEntropy');
+        const submitBtn = document.getElementById('submitBtn');
+        const progressRing = document.getElementById('progressRing');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressText = document.getElementById('progressText');
+        const progressSubtext = document.getElementById('progressSubtext');
+        const algoSelect = document.getElementById('algoSelect');
+        const modeSelect = document.getElementById('modeSelect');
+        const keySizeSelect = document.getElementById('keySizeSelect');
+        const algoDescription = document.getElementById('algoDescription');
+        const speedBar = document.getElementById('speedBar');
+        const speedValue = document.getElementById('speedValue');
+        const memoryBar = document.getElementById('memoryBar');
+        const memoryValue = document.getElementById('memoryValue');
+
+        let selectedFile = null;
+
+        // Algorithm info mapping
+        const algoInfo = {
+            'AES': {
+                description: 'Advanced Encryption Standard with 256-bit key. The industry standard for secure data encryption.',
+                security: 'High',
+                speed: 'Medium',
+                compatibility: 'Universal'
+            },
+            'CHACHA20': {
+                description: 'Modern stream cipher with built-in authentication. Excellent performance on mobile devices.',
+                security: 'High',
+                speed: 'Very High',
+                compatibility: 'Modern systems'
+            },
+            'BLOWFISH': {
+                description: 'Fast block cipher, good for password hashing and small files. Older but still secure.',
+                security: 'Medium',
+                speed: 'High',
+                compatibility: 'Wide'
+            },
+            '3DES': {
+                description: 'Legacy algorithm applying DES three times. Secure for specific compliance requirements.',
+                security: 'Medium',
+                speed: 'Slow',
+                compatibility: 'Legacy systems'
+            }
+        };
+
+        // Performance estimates
+        const perfEstimates = {
+            'AES': { speed: 75, memory: 30 },
+            'CHACHA20': { speed: 120, memory: 20 },
+            'BLOWFISH': { speed: 90, memory: 25 },
+            '3DES': { speed: 30, memory: 35 }
+        };
+
+        const algorithmConfig = {
+            'AES': { modes: ['CBC', 'GCM', 'CTR', 'CFB', 'OFB'], keySizes: ['256', '192', '128'] },
+            'CHACHA20': { modes: ['POLY1305'], keySizes: ['256'] },
+            'BLOWFISH': { modes: ['CBC'], keySizes: ['256', '192', '128'] },
+            '3DES': { modes: ['CBC'], keySizes: ['192', '128'] }
+        };
+
+        const modeLabels = {
+            'CBC': 'CBC (Cipher Block Chaining)',
+            'GCM': 'GCM (Authenticated Encryption)',
+            'CTR': 'CTR (Counter)',
+            'CFB': 'CFB (Cipher Feedback)',
+            'OFB': 'OFB (Output Feedback)',
+            'POLY1305': 'POLY1305 (Authenticated Stream)'
+        };
+
+        const getAlgorithmConfig = function(algo) {
+            return algorithmConfig[algo] || algorithmConfig['AES'];
+        };
+
+        const updateModeOptions = function(algo) {
+            if (!modeSelect) return;
+
+            const config = getAlgorithmConfig(algo);
+            const allowedModes = config.modes;
+            const previousMode = modeSelect.value;
+            const nextMode = allowedModes.includes(previousMode) ? previousMode : allowedModes[0];
+
+            modeSelect.innerHTML = '';
+
+            allowedModes.forEach((mode) => {
+                const option = document.createElement('option');
+                option.value = mode;
+                option.textContent = modeLabels[mode] || mode;
+                if (mode === nextMode) {
+                    option.selected = true;
+                }
+                modeSelect.appendChild(option);
+            });
+
+            const ecbOption = document.createElement('option');
+            ecbOption.value = 'ECB';
+            ecbOption.textContent = 'ECB (Not Secure - Disabled)';
+            ecbOption.disabled = true;
+            ecbOption.style.color = '#ef4444';
+            modeSelect.appendChild(ecbOption);
+        };
+
+        const updateKeySizeOptions = function(algo) {
+            if (!keySizeSelect) return;
+
+            const config = getAlgorithmConfig(algo);
+            const allowedSizes = config.keySizes;
+            const currentSize = keySizeSelect.value;
+            const nextSize = allowedSizes.includes(currentSize) ? currentSize : allowedSizes[0];
+
+            Array.from(keySizeSelect.options).forEach((option) => {
+                option.disabled = !allowedSizes.includes(option.value);
+            });
+            keySizeSelect.value = nextSize;
+
+            document.querySelectorAll('.key-option').forEach((card) => {
+                const size = card.getAttribute('data-size');
+                const isAllowed = allowedSizes.includes(size);
+
+                card.style.display = isAllowed ? '' : 'none';
+                card.classList.toggle('disabled', !isAllowed);
+                card.classList.toggle('selected', isAllowed && size === nextSize);
+            });
+        };
+
+        // Update info title with current selections
+        const updateInfoTitleWithSelection = function() {
+            const infoTitle = document.querySelector('.info-title');
+            if (!infoTitle || !algoSelect) return;
+
+            const selectedAlgo = algoSelect.value;
+            const selectedKeySize = keySizeSelect ? keySizeSelect.value : '256';
+            const selectedMode = modeSelect ? modeSelect.value : 'CBC';
+
+            if (selectedAlgo === 'AES') {
+                infoTitle.textContent = `AES-${selectedKeySize}-${selectedMode}`;
+            } else if (selectedAlgo === 'CHACHA20') {
+                infoTitle.textContent = `ChaCha20-${selectedMode}`;
+            } else {
+                infoTitle.textContent = `${selectedAlgo}-${selectedMode}`;
+            }
+        };
+
+        // Algorithm selection
+        window.selectAlgorithm = function(algo, sourceEl) {
+            // Update UI cards
+            document.querySelectorAll('.algo-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            const selectedCard = sourceEl || document.querySelector(`.algo-card[data-algo="${algo}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('selected');
+            }
+            
+            // Update hidden select
+            if (algoSelect) {
+                algoSelect.value = algo;
+            }
+
+            updateModeOptions(algo);
+            updateKeySizeOptions(algo);
+            
+            // Update info panel
+            const info = algoInfo[algo] || algoInfo['AES'];
+            if (algoDescription) {
+                algoDescription.textContent = info.description;
+            }
+            updateInfoTitleWithSelection();
+            
+            // Update security badges
+            const securityEl = document.querySelectorAll('.spec-value')[0];
+            const speedEl = document.querySelectorAll('.spec-value')[1];
+            const compatEl = document.querySelectorAll('.spec-value')[2];
+            
+            if (securityEl && speedEl && compatEl) {
+                securityEl.textContent = info.security;
+                speedEl.textContent = info.speed;
+                compatEl.textContent = info.compatibility;
+                
+                securityEl.className = 'spec-value ' + (info.security === 'High' ? 'high' : 'medium');
+                
+                if (info.speed === 'Very High' || info.speed === 'High') {
+                    speedEl.className = 'spec-value high';
+                } else if (info.speed === 'Medium') {
+                    speedEl.className = 'spec-value medium';
+                } else {
+                    speedEl.className = 'spec-value low';
+                }
+            }
+            
+            // Update performance estimates
+            const perf = perfEstimates[algo] || perfEstimates['AES'];
+            if (perf && speedBar && speedValue && memoryBar && memoryValue) {
+                speedBar.style.width = (perf.speed / 1.5) + '%';
+                speedValue.textContent = perf.speed + ' MB/s';
+                memoryBar.style.width = (perf.memory / 50 * 100) + '%';
+                memoryValue.textContent = perf.memory + ' MB';
+            }
+        };
+
+        // Key size selection
+        window.selectKeySize = function(size, sourceEl) {
+            const nextSize = String(size);
+            const requestedOption = keySizeSelect
+                ? Array.from(keySizeSelect.options).find((option) => option.value === nextSize)
+                : null;
+            if (!requestedOption || requestedOption.disabled) {
+                return;
+            }
+
+            // Remove selected from all
+            document.querySelectorAll('.key-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Add selected to clicked option
+            const selectedOption = sourceEl || document.querySelector(`.key-option[data-size="${nextSize}"]`);
+            if (selectedOption) {
+                selectedOption.classList.add('selected');
+            }
+            
+            // Update hidden select
+            if (keySizeSelect) {
+                keySizeSelect.value = nextSize;
+            }
+            
+            // Update title
+            updateInfoTitleWithSelection();
+        };
+
+        // Drag and drop handlers
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length) handleFileSelect(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFileSelect(e.target.files[0]);
+        });
+
+        // File selection handler
+        function handleFileSelect(file) {
+            selectedFile = file;
+            
+            // Show selected state
+            uploadDefault.style.display = 'none';
+            uploadSelected.style.display = 'block';
+            
+            // Update file info
+            selectedFileName.textContent = file.name;
+            
+            // Format file size
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(file.size) / Math.log(1024));
+            const formattedSize = (file.size / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+            selectedFileSize.textContent = formattedSize;
+            fileSizeFormatted.textContent = formattedSize;
+            
+            // Format date
+            const date = new Date(file.lastModified);
+            const formattedDate = date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            selectedFileModified.textContent = formattedDate;
+            fileDate.textContent = formattedDate;
+            
+            // Detect file type
+            const extension = file.name.split('.').pop().toUpperCase();
+            document.getElementById('fileType').textContent = extension;
+            document.getElementById('fileMime').textContent = file.type || extension;
+            
+            // Simulate entropy calculation
+            const entropy = (Math.random() * 3 + 5).toFixed(2);
+            fileEntropy.textContent = entropy + ' bits/byte';
+            
+            // Update file icon based on type
+            const iconMap = {
+                'PDF': '📕', 'DOC': '📘', 'DOCX': '📘',
+                'XLS': '📗', 'XLSX': '📗', 'JPG': '🖼️',
+                'PNG': '🖼️', 'TXT': '📄', 'ZIP': '📦'
+            };
+            document.getElementById('fileIcon').textContent = iconMap[extension] || '📄';
+            
+            // Show progress animation
+            simulateProgress();
+            
+            // Enable submit button
+            submitBtn.classList.add('active');
+            submitBtn.disabled = false;
+        }
+
+        // Simulate file analysis progress
+        function simulateProgress() {
+            uploadProgress.style.display = 'flex';
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                if (progress <= 100) {
+                    const circumference = 226.2;
+                    const offset = circumference - (progress / 100) * circumference;
+                    progressRing.style.strokeDashoffset = offset;
+                    progressPercent.textContent = progress + '%';
+                    
+                    if (progress < 30) {
+                        progressText.textContent = 'Analyzing file...';
+                        progressSubtext.textContent = 'Checking format';
+                    } else if (progress < 60) {
+                        progressText.textContent = 'Calculating entropy...';
+                        progressSubtext.textContent = 'Measuring randomness';
+                    } else if (progress < 90) {
+                        progressText.textContent = 'Preparing encryption...';
+                        progressSubtext.textContent = 'Generating parameters';
+                    } else {
+                        progressText.textContent = 'Ready for encryption';
+                        progressSubtext.textContent = 'All systems go';
+                    }
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        uploadProgress.style.display = 'none';
+                    }, 500);
+                }
+            }, 30);
+        }
+
+        // Remove file
+        window.removeFile = function() {
+            selectedFile = null;
+            fileInput.value = '';
+            uploadDefault.style.display = 'block';
+            uploadSelected.style.display = 'none';
+            submitBtn.classList.remove('active');
+            submitBtn.disabled = true;
+        };
+
+        // Form submission
+        document.getElementById('encryptForm').addEventListener('submit', function(e) {
+            if (!selectedFile) {
+                e.preventDefault();
+                alert('Please select a file first');
+                return;
+            }
+            
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+        });
+
+        // Download animation
+        window.showDownloadAnimation = function(btn, e) {
+            e.preventDefault();
+            btn.classList.add('loading');
+            setTimeout(() => {
+                window.location.href = btn.href;
+            }, 500);
+        };
+
+        // Refresh files
+        window.refreshFiles = function() {
+            location.reload();
+        };
+
+        // Add mode change listener to update title
+        if (modeSelect) {
+            modeSelect.addEventListener('change', updateInfoTitleWithSelection);
+        }
+
+        // Initialize from default selected algorithm
+        window.selectAlgorithm(algoSelect ? algoSelect.value : 'AES');
+    });
+</script>
+{% endblock %}

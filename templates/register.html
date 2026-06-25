@@ -1,0 +1,232 @@
+﻿{% extends 'base.html' %}
+{% block title %}Register - CyberSuite{% endblock %}
+
+{% block extra_head %}
+<style>
+  body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+
+  .animated-bg {
+    display: none !important;
+  }
+
+  .auth-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 64px);
+    padding: 1.5rem 1rem;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 520px;
+    background: rgba(17, 24, 39, .92);
+    border: 1px solid rgba(99, 102, 241, .28);
+    border-radius: 18px;
+    padding: 1.35rem;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, .28);
+  }
+
+  .auth-logo {
+    text-align: center;
+    margin-bottom: .9rem;
+  }
+
+  .auth-logo .shield {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(99, 102, 241, .2);
+    border: 1px solid rgba(99, 102, 241, .35);
+    margin-bottom: .55rem;
+  }
+
+  .auth-logo h2 {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: .2rem;
+  }
+
+  .auth-logo p {
+    font-size: .84rem;
+    color: var(--muted);
+  }
+
+  .clerk-mount {
+    width: 100%;
+    min-height: 500px;
+    border: 1px solid rgba(99, 102, 241, .2);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, .45);
+    padding: .45rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .clerk-mount .cl-rootBox,
+  .clerk-mount .cl-card,
+  .clerk-mount .cl-cardBox,
+  .clerk-mount .cl-signUp-root,
+  .clerk-mount iframe {
+    width: 100% !important;
+    max-width: 395px !important;
+    margin: 0 auto !important;
+  }
+
+  .clerk-mount .cl-main {
+    padding: 1rem !important;
+  }
+
+  .clerk-mount .cl-footer,
+  .clerk-mount .cl-footerAction,
+  .clerk-mount .cl-footerActionText,
+  .clerk-mount .cl-footerActionLink {
+    display: none !important;
+  }
+
+  .error-message {
+    border: 1px solid rgba(245, 158, 11, .45);
+    background: rgba(245, 158, 11, .15);
+    color: #fde68a;
+    border-radius: 10px;
+    padding: .8rem;
+    font-size: .84rem;
+    text-align: center;
+  }
+
+  .auth-footer {
+    text-align: center;
+    margin-top: .9rem;
+    padding-top: .8rem;
+    border-top: 1px solid rgba(99, 102, 241, .18);
+    font-size: .86rem;
+    color: var(--muted);
+  }
+
+  .auth-footer a {
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: .2rem;
+  }
+
+  .auth-footer a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 768px) {
+    .auth-wrapper { padding: 1rem .6rem; }
+    .auth-card { max-width: 100%; padding: 1rem; }
+    .clerk-mount { min-height: 530px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="shield"><i class="fas fa-shield-halved" style="color:#818cf8"></i></div>
+      <h2>Create Account</h2>
+      <p>Secure registration powered by Clerk</p>
+    </div>
+
+    {% if clerk_auth_enabled %}
+      <div id="clerkRegisterMount" class="clerk-mount"></div>
+
+      <form method="POST" action="{{ url_for('auth.clerk_auth') }}" id="clerkRegisterForm" style="display:none;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if next_page %}
+        <input type="hidden" name="next" value="{{ next_page }}">
+        {% endif %}
+        <input type="hidden" name="clerk_token" id="clerkRegisterToken">
+      </form>
+    {% else %}
+      <div class="error-message">Clerk authentication is not configured. Add Clerk keys in `.env`.</div>
+    {% endif %}
+
+    <div class="auth-footer">
+      Already have an account?
+      <a href="{{ url_for('auth.login', next=next_page) if next_page else url_for('auth.login') }}">Sign in</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if clerk_auth_enabled and clerk_js_url and clerk_publishable_key %}
+<script>
+window.addEventListener('load', async function() {
+  const clerkMount = document.getElementById('clerkRegisterMount');
+  const clerkForm = document.getElementById('clerkRegisterForm');
+  const clerkTokenInput = document.getElementById('clerkRegisterToken');
+
+  if (!clerkMount || !clerkForm || !clerkTokenInput) return;
+
+  if (!window.Clerk) {
+    clerkMount.innerHTML = '<div class="error-message">Clerk SDK failed to load.</div>';
+    return;
+  }
+
+  try {
+    await window.Clerk.load();
+
+    window.Clerk.mountSignUp(clerkMount, {
+      afterSignInUrl: window.location.href,
+      afterSignUpUrl: window.location.href,
+      appearance: {
+        elements: {
+          rootBox: { width: '100%', maxWidth: '395px', margin: '0 auto' },
+          card: { width: '100%', maxWidth: '395px', margin: '0 auto' },
+          cardBox: { width: '100%', maxWidth: '395px', margin: '0 auto' },
+          footerAction: { display: 'none' },
+          footerActionText: { display: 'none' },
+          footerActionLink: { display: 'none' }
+        }
+      }
+    });
+
+    let hasSubmitted = false;
+
+    async function submitTokenIfSignedIn() {
+      if (hasSubmitted || !window.Clerk || !window.Clerk.session) return false;
+      try {
+        const token = await window.Clerk.session.getToken();
+        if (!token) return false;
+        hasSubmitted = true;
+        clerkTokenInput.value = token;
+        clerkForm.submit();
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // one fallback check to avoid periodic UI churn
+    setTimeout(function() {
+      submitTokenIfSignedIn();
+    }, 2500);
+
+    submitTokenIfSignedIn();
+
+    if (typeof window.Clerk.addListener === 'function') {
+      window.Clerk.addListener(function(payload) {
+        if (payload && payload.session) submitTokenIfSignedIn();
+      });
+    }
+  } catch (error) {
+    clerkMount.innerHTML = '<div class="error-message">Failed to initialize registration.</div>';
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

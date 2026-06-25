@@ -1,0 +1,1416 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Main Scan Card -->
+        <div class="col-lg-8">
+            <div class="cyber-scan-card animate-fade-in">
+                <!-- Scanning Effects -->
+                <div class="scan-line"></div>
+                <div class="scan-pulse"></div>
+                <div class="floating-particles">
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                    <span class="particle"></span>
+                </div>
+
+                <!-- Corner Decorations -->
+                <div class="corner top-left"></div>
+                <div class="corner top-right"></div>
+                <div class="corner bottom-left"></div>
+                <div class="corner bottom-right"></div>
+
+                <!-- Header -->
+                <div class="scan-header">
+                    <div class="header-icon">
+                        <i class="bi bi-shield-check"></i>
+                        <div class="icon-ring"></div>
+                    </div>
+                    <h2 class="glitch-text" data-text="URL PHISHING SCAN">URL PHISHING SCAN</h2>
+                    <p class="typing-text">Enter URL to analyze with AI-powered threat detection</p>
+                </div>
+
+                <!-- Scan Form -->
+                <form method="POST" action="{{ url_for('phishing.scan_url') }}" class="cyber-scan-form" id="scanForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="url-input-group">
+                        <div class="cyber-input-wrapper">
+                            <i class="bi bi-link-45deg input-icon"></i>
+                            <input type="url" 
+                                   name="url" 
+                                   class="cyber-input" 
+                                   placeholder="https://example.com" 
+                                   id="urlInput"
+                                   required>
+                            <span class="input-border"></span>
+                            <span class="input-glow"></span>
+                        </div>
+                        <button type="submit" class="cyber-scan-btn" id="scanBtn">
+                            <span class="btn-text">ANALYZE URL</span>
+                            <span class="btn-glitch"></span>
+                            <span class="btn-scan"></span>
+                            <span class="btn-particles"></span>
+                        </button>
+                    </div>
+
+                    <!-- Quick Examples -->
+                    <div class="quick-examples">
+                        <span class="examples-label">Try examples:</span>
+                        <button type="button" class="example-link" onclick="setExample('https://google.com')">google.com</button>
+                        <button type="button" class="example-link" onclick="setExample('https://github.com')">github.com</button>
+                        <button type="button" class="example-link" onclick="setExample('https://youtube.com')">youtube.com</button>
+                    </div>
+                </form>
+
+                {% if result %}
+                <!-- Scan Results with Animation -->
+                <div class="scan-results" id="scanResults">
+                    <!-- Result Header -->
+                    <div class="result-header">
+                        <div class="result-title">
+                            <i class="bi bi-shield-fill-check"></i>
+                            <h3>Analysis Results</h3>
+                        </div>
+                        
+                        {% if result.classification == 'threat' %}
+                        <div class="result-badge danger">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span>THREAT DETECTED</span>
+                            <div class="badge-pulse"></div>
+                        </div>
+                        {% elif result.classification == 'safe' %}
+                        <div class="result-badge success">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>SAFE</span>
+                        </div>
+                        {% elif result.classification == 'pending' %}
+                        <div class="result-badge pending">
+                            <i class="bi bi-hourglass-split"></i>
+                            <span>ANALYZING</span>
+                        </div>
+                        {% else %}
+                        <div class="result-badge unknown">
+                            <i class="bi bi-question-circle-fill"></i>
+                            <span>UNKNOWN</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- URL Display -->
+                    <div class="url-display">
+                        <span class="url-label">Scanned URL:</span>
+                        <div class="url-value">
+                            <i class="bi bi-link"></i>
+                            <span>{{ request.form.url }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Results Grid -->
+                    <div class="results-grid">
+                        <!-- ML Engine Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="100">
+                            <div class="card-header">
+                                <i class="bi bi-cpu"></i>
+                                <h4>ML Engine</h4>
+                            </div>
+                            <div class="card-content">
+                                <div class="score-circle">
+                                    <svg viewBox="0 0 36 36" class="circular-chart">
+                                        <path class="circle-bg"
+                                            d="M18 2.0845
+                                            a 15.9155 15.9155 0 0 1 0 31.831
+                                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        />
+                                        <path class="circle"
+                                            stroke-dasharray="{{ (result.ml_score * 100)|int }}, 100"
+                                            d="M18 2.0845
+                                            a 15.9155 15.9155 0 0 1 0 31.831
+                                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                                        />
+                                        <text x="18" y="20.35" class="percentage">{{ (result.ml_score * 100)|int }}%</text>
+                                    </svg>
+                                </div>
+                                <div class="score-details">
+                                    <span class="score-label">Phishing Probability</span>
+                                    <span class="score-value">{{ (result.ml_score * 100)|round(1) }}%</span>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <span class="indicator {{ 'high' if result.ml_score > 0.7 else 'medium' if result.ml_score > 0.4 else 'low' }}"></span>
+                                {{ 'High Risk' if result.ml_score > 0.7 else 'Medium Risk' if result.ml_score > 0.4 else 'Low Risk' }}
+                            </div>
+                        </div>
+
+                        <!-- VirusTotal Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="200">
+                            <div class="card-header">
+                                <i class="bi bi-shield-shaded"></i>
+                                <h4>VirusTotal</h4>
+                            </div>
+                            <div class="card-content">
+                                <div class="stats-grid">
+                                    <div class="stat-item">
+                                        <span class="stat-number {% if result.vt_stats.malicious > 0 %}text-danger{% endif %}">
+                                            {{ result.vt_stats.malicious or 0 }}
+                                        </span>
+                                        <span class="stat-label">Malicious</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">{{ result.vt_stats.total or 0 }}</span>
+                                        <span class="stat-label">Total Engines</span>
+                                    </div>
+                                </div>
+                                <div class="vt-status">
+                                    {% if result.vt_stats.status == 'success' %}
+                                    <span class="status-badge success">
+                                        <i class="bi bi-check-circle"></i> Verified
+                                    </span>
+                                    {% elif result.vt_stats.status == 'queued' %}
+                                    <span class="status-badge pending">
+                                        <i class="bi bi-hourglass"></i> Queued
+                                    </span>
+                                    {% elif result.vt_stats.status == 'rate_limited' %}
+                                    <span class="status-badge warning">
+                                        <i class="bi bi-exclamation-triangle"></i> Rate Limited
+                                    </span>
+                                    {% else %}
+                                    <span class="status-badge unknown">
+                                        <i class="bi bi-question"></i> Not Available
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Threat Intel Card -->
+                        <div class="result-card" data-aos="fade-up" data-aos-delay="300">
+                            <div class="card-header">
+                                <i class="bi bi-diagram-3"></i>
+                                <h4>Threat Intelligence</h4>
+                            </div>
+                            <div class="card-content">
+                                <div class="intel-grid">
+                                    <div class="intel-item">
+                                        <span class="intel-label">URLScan</span>
+                                        <span class="intel-value">
+                                            {% if result.api_results.urlscan and 'uuid' in result.api_results.urlscan %}
+                                            <i class="bi bi-check-circle-fill text-success"></i> Submitted
+                                            {% else %}
+                                            <i class="bi bi-x-circle-fill text-secondary"></i> No Data
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="intel-item">
+                                        <span class="intel-label">Google Safe Browsing</span>
+                                        <span class="intel-value">
+                                            {% if result.gsb_stats.malicious %}
+                                            <i class="bi bi-exclamation-triangle-fill text-danger"></i> Malicious
+                                            {% elif result.gsb_stats.status == 'safe' %}
+                                            <i class="bi bi-check-circle-fill text-success"></i> Safe
+                                            {% else %}
+                                            <i class="bi bi-dash-circle-fill text-secondary"></i> Unknown
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="intel-item">
+                                        <span class="intel-label">IsMalicious</span>
+                                        <span class="intel-value">
+                                            {% if result.ismalicious_stats.status == 'success' and result.ismalicious_stats.is_malicious %}
+                                            <i class="bi bi-exclamation-triangle-fill text-danger"></i> Malicious
+                                            {% elif result.ismalicious_stats.status == 'success' %}
+                                            <i class="bi bi-check-circle-fill text-success"></i> Safe
+                                            {% elif result.ismalicious_stats.status == 'unconfigured' %}
+                                            <i class="bi bi-gear-fill text-secondary"></i> Unconfigured
+                                            {% elif result.ismalicious_stats.status == 'rate_limited' %}
+                                            <i class="bi bi-exclamation-circle-fill text-warning"></i> Rate Limited
+                                            {% else %}
+                                            <i class="bi bi-dash-circle-fill text-secondary"></i> Unknown
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Analysis -->
+                    <div class="detailed-analysis" data-aos="fade-up">
+                        <h4>Detailed Analysis</h4>
+                        <div class="analysis-grid">
+                            <div class="analysis-item">
+                                <span class="analysis-label">Domain Reputation</span>
+                                <span class="analysis-value">
+                                    {% if result.ml_score > 0.7 %}
+                                    <span class="badge bg-danger">Poor</span>
+                                    {% elif result.ml_score > 0.4 %}
+                                    <span class="badge bg-warning">Fair</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Good</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">SSL Certificate</span>
+                                <span class="analysis-value">
+                                    {% if request.form.url.startswith('https') %}
+                                    <span class="badge bg-success">Valid</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Missing</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">URL Length</span>
+                                <span class="analysis-value">{{ request.form.url|length }} chars</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Special Characters</span>
+                                <span class="analysis-value">{{ request.form.url|replace('[a-zA-Z0-9:/.-]', '')|length }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Prevention Guide Sidebar -->
+        <div class="col-lg-4">
+            <div class="prevention-sidebar">
+                <!-- Phishing Stats -->
+                <div class="prevention-card" data-aos="fade-left" data-aos-delay="100">
+                    <div class="card-header">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <h3>Phishing Statistics</h3>
+                    </div>
+                    <div class="stats-list">
+                        <div class="stat-row">
+                            <span class="stat-name">Daily Phishing Sites</span>
+                            <span class="stat-number">10,000+</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-name">Success Rate</span>
+                            <span class="stat-number text-danger">32%</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-name">Financial Loss</span>
+                            <span class="stat-number">$12B/year</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-name">Targets Small Business</span>
+                            <span class="stat-number">76%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prevention Tips -->
+                <div class="prevention-card" data-aos="fade-left" data-aos-delay="200">
+                    <div class="card-header">
+                        <i class="bi bi-shield-plus"></i>
+                        <h3>How to Prevent</h3>
+                    </div>
+                    <div class="tips-list">
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Check the URL carefully</h4>
+                                <p>Look for misspellings, extra characters, or suspicious domains</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Look for HTTPS</h4>
+                                <p>Ensure the website uses secure connection (padlock icon)</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Don't click suspicious links</h4>
+                                <p>Hover over links to see the real destination</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Enable 2-Factor Authentication</h4>
+                                <p>Add extra layer of security to your accounts</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Use password manager</h4>
+                                <p>It won't autofill on fake websites</p>
+                            </div>
+                        </div>
+                        <div class="tip-item">
+                            <div class="tip-icon">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                            <div class="tip-content">
+                                <h4>Keep browser updated</h4>
+                                <p>Latest security patches protect against known threats</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Signs -->
+                <div class="prevention-card" data-aos="fade-left" data-aos-delay="300">
+                    <div class="card-header">
+                        <i class="bi bi-exclamation-octagon"></i>
+                        <h3>Warning Signs</h3>
+                    </div>
+                    <div class="warning-list">
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>Urgent or threatening language</span>
+                        </div>
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>Requests for personal information</span>
+                        </div>
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>Too good to be true offers</span>
+                        </div>
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>Mismatched email domains</span>
+                        </div>
+                        <div class="warning-item">
+                            <i class="bi bi-x-circle-fill text-danger"></i>
+                            <span>Poor grammar and spelling</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Contact -->
+                <div class="prevention-card emergency" data-aos="fade-left" data-aos-delay="400">
+                    <div class="card-header">
+                        <i class="bi bi-telephone-fill"></i>
+                        <h3>Report Phishing</h3>
+                    </div>
+                    <div class="emergency-content">
+                        <p>If you suspect a phishing attack:</p>
+                        <ul>
+                            <li><i class="bi bi-envelope-fill"></i> report@phishing.gov</li>
+                            <li><i class="bi bi-globe"></i> www.antiphishing.org</li>
+                            <li><i class="bi bi-shield-fill"></i> Forward to 7726 (SPAM)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ===== URL SCAN PAGE CYBER STYLES ===== */
+
+/* Main Scan Card */
+.cyber-scan-card {
+    position: relative;
+    background: rgba(10, 15, 20, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid #00ffff;
+    padding: 2rem;
+    overflow: hidden;
+    animation: cardAppear 0.8s ease-out;
+    box-shadow: 0 0 50px rgba(0, 255, 255, 0.2);
+}
+
+@keyframes cardAppear {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scan Effects */
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00ffff, #ff00ff, #00ffff, transparent);
+    animation: scanMove 4s linear infinite;
+}
+
+@keyframes scanMove {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.scan-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 30% 50%, rgba(0, 255, 255, 0.1), transparent);
+    animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+}
+
+/* Floating Particles */
+.floating-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.floating-particles .particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #00ffff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: particleFloat 4s linear infinite;
+}
+
+.floating-particles .particle:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
+.floating-particles .particle:nth-child(2) { top: 40%; right: 15%; animation-delay: 1s; }
+.floating-particles .particle:nth-child(3) { bottom: 30%; left: 20%; animation-delay: 2s; }
+.floating-particles .particle:nth-child(4) { bottom: 50%; right: 25%; animation-delay: 3s; }
+
+@keyframes particleFloat {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100px) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Corner Decorations */
+.corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #00ffff;
+    animation: cornerPulse 2s ease-in-out infinite;
+}
+
+.corner.top-left {
+    top: 10px;
+    left: 10px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.corner.top-right {
+    top: 10px;
+    right: 10px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.corner.bottom-left {
+    bottom: 10px;
+    left: 10px;
+    border-right: none;
+    border-top: none;
+}
+
+.corner.bottom-right {
+    bottom: 10px;
+    right: 10px;
+    border-left: none;
+    border-top: none;
+}
+
+@keyframes cornerPulse {
+    0%, 100% { 
+        width: 20px;
+        height: 20px;
+        opacity: 1;
+    }
+    50% { 
+        width: 30px;
+        height: 30px;
+        opacity: 0.7;
+        border-color: #ff00ff;
+    }
+}
+
+/* Header */
+.scan-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.header-icon {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.header-icon i {
+    font-size: 3rem;
+    color: #00ffff;
+    text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    animation: iconPulse 2s ease-in-out infinite;
+    z-index: 2;
+}
+
+.icon-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #00ffff;
+    border-radius: 50%;
+    animation: ringPulse 2s ease-out infinite;
+}
+
+@keyframes iconPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+@keyframes ringPulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+.glitch-text {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    position: relative;
+    animation: glitchSkew 4s infinite;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.glitch-text::before {
+    color: #ff00ff;
+    z-index: -1;
+    animation: glitchOffset 0.3s infinite;
+}
+
+.glitch-text::after {
+    color: #00ffff;
+    z-index: -2;
+    animation: glitchOffset 0.3s infinite reverse;
+}
+
+@keyframes glitchSkew {
+    0%, 100% { transform: skew(0deg); }
+    92% { transform: skew(2deg); }
+    94% { transform: skew(-2deg); }
+    96% { transform: skew(1deg); }
+    98% { transform: skew(-1deg); }
+}
+
+@keyframes glitchOffset {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(2px, -2px); }
+    60% { transform: translate(-2px, -2px); }
+    80% { transform: translate(2px, 2px); }
+    100% { transform: translate(0); }
+}
+
+.typing-text {
+    color: #888;
+    font-size: 1rem;
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid #00ffff;
+    animation: typing 3s steps(40) infinite, blink 0.5s step-end infinite;
+    max-width: fit-content;
+    margin: 0 auto;
+}
+
+@keyframes typing {
+    0%, 100% { width: 0; }
+    50% { width: 400px; }
+}
+
+@keyframes blink {
+    50% { border-color: transparent; }
+}
+
+/* Scan Form */
+.url-input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.cyber-input-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #00ffff;
+    z-index: 3;
+    font-size: 1.2rem;
+}
+
+.cyber-input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: #fff;
+    font-size: 1rem;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s;
+}
+
+.cyber-input:focus {
+    outline: none;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.cyber-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.input-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #00ffff;
+    pointer-events: none;
+    transition: all 0.3s;
+    animation: borderPulse 3s infinite;
+}
+
+@keyframes borderPulse {
+    0%, 100% { 
+        border-color: #00ffff;
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    }
+    50% { 
+        border-color: #ff00ff;
+        box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+    }
+}
+
+.input-glow {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+    pointer-events: none;
+}
+
+.cyber-input-wrapper:hover .input-glow {
+    left: 100%;
+}
+
+.cyber-input:focus + .input-border {
+    border-color: #ff00ff;
+    box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+}
+
+/* Scan Button */
+.cyber-scan-btn {
+    position: relative;
+    padding: 0 2rem;
+    background: linear-gradient(135deg, #00ffff, #00ccff);
+    border: none;
+    color: #0a0c0f;
+    font-family: inherit;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s;
+    min-width: 150px;
+    animation: btnPulse 2s ease-in-out infinite;
+}
+
+@keyframes btnPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.btn-glitch {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: btnGlitch 3s infinite;
+}
+
+@keyframes btnGlitch {
+    0%, 100% { transform: translateX(-100%); }
+    92% { transform: translateX(100%); }
+    94% { transform: translateX(-100%); }
+    96% { transform: translateX(50%); }
+    98% { transform: translateX(-50%); }
+}
+
+.btn-scan {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #fff, transparent);
+    animation: btnScan 2s linear infinite;
+}
+
+@keyframes btnScan {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.cyber-scan-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(0, 255, 255, 0.8);
+}
+
+/* Quick Examples */
+.quick-examples {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.examples-label {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.example-link {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    color: #00ffff;
+    padding: 0.3rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.example-link:hover {
+    border-color: #00ffff;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Scan Results */
+.scan-results {
+    margin-top: 3rem;
+    animation: resultsAppear 0.8s ease-out;
+}
+
+@keyframes resultsAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.result-title {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.result-title i {
+    color: #00ffff;
+    font-size: 1.5rem;
+    animation: titleGlow 2s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+    0%, 100% { filter: drop-shadow(0 0 5px #00ffff); }
+    50% { filter: drop-shadow(0 0 15px #00ffff); }
+}
+
+.result-title h3 {
+    color: #fff;
+    margin: 0;
+}
+
+.result-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.result-badge.danger {
+    background: rgba(255, 0, 255, 0.2);
+    border: 1px solid #ff00ff;
+    color: #ff00ff;
+}
+
+.result-badge.success {
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px solid #00ff00;
+    color: #00ff00;
+}
+
+.result-badge.pending {
+    background: rgba(255, 255, 0, 0.2);
+    border: 1px solid #ffff00;
+    color: #ffff00;
+}
+
+.result-badge.unknown {
+    background: rgba(128, 128, 128, 0.2);
+    border: 1px solid #888;
+    color: #888;
+}
+
+.badge-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255,0,255,0.3), transparent);
+    animation: badgePulse 1s ease-out infinite;
+}
+
+@keyframes badgePulse {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+/* URL Display */
+.url-display {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+.url-label {
+    display: block;
+    color: #888;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.url-value {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #00ffff;
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
+}
+
+/* Results Grid */
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.result-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 1.5rem;
+    transition: all 0.3s;
+}
+
+.result-card:hover {
+    border-color: #00ffff;
+    transform: translateY(-5px);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-header i {
+    color: #00ffff;
+    font-size: 1.5rem;
+}
+
+.card-header h4 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* Score Circle */
+.score-circle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.circular-chart {
+    width: 100px;
+    height: 100px;
+}
+
+.circle-bg {
+    stroke: rgba(0, 255, 255, 0.2);
+    fill: none;
+    stroke-width: 2.8;
+}
+
+.circle {
+    fill: none;
+    stroke-width: 2.8;
+    stroke-linecap: round;
+    animation: progress 1s ease-out forwards;
+}
+
+.percentage {
+    fill: #00ffff;
+    font-size: 6px;
+    text-anchor: middle;
+    font-weight: bold;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.stat-label {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+/* Intel Grid */
+.intel-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.intel-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.intel-label {
+    color: #888;
+}
+
+.intel-value i {
+    margin-right: 0.3rem;
+}
+
+/* Detailed Analysis */
+.detailed-analysis {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.detailed-analysis h4 {
+    color: #00ffff;
+    margin-bottom: 1.5rem;
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.analysis-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.analysis-label {
+    color: #888;
+}
+
+.analysis-value {
+    font-weight: 600;
+}
+
+/* Prevention Sidebar */
+.prevention-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.prevention-card {
+    background: rgba(10, 15, 20, 0.95);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s;
+}
+
+.prevention-card:hover {
+    border-color: #00ffff;
+    transform: translateX(-5px);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+}
+
+.prevention-card.emergency {
+    border-color: #ff00ff;
+}
+
+.prevention-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.prevention-card .card-header i {
+    color: #00ffff;
+    font-size: 1.5rem;
+}
+
+.prevention-card.emergency .card-header i {
+    color: #ff00ff;
+}
+
+.prevention-card .card-header h3 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+/* Stats List */
+.stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.stat-name {
+    color: #888;
+}
+
+.stat-number {
+    color: #00ffff;
+    font-weight: 700;
+}
+
+/* Tips List */
+.tips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.tip-item {
+    display: flex;
+    gap: 1rem;
+    animation: tipAppear 0.5s ease-out;
+}
+
+@keyframes tipAppear {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.tip-item:nth-child(1) { animation-delay: 0.1s; }
+.tip-item:nth-child(2) { animation-delay: 0.2s; }
+.tip-item:nth-child(3) { animation-delay: 0.3s; }
+.tip-item:nth-child(4) { animation-delay: 0.4s; }
+.tip-item:nth-child(5) { animation-delay: 0.5s; }
+.tip-item:nth-child(6) { animation-delay: 0.6s; }
+
+.tip-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid #00ffff;
+    border-radius: 50%;
+    color: #00ffff;
+    flex-shrink: 0;
+}
+
+.tip-content h4 {
+    color: #fff;
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+}
+
+.tip-content p {
+    color: #888;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Warning List */
+.warning-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.warning-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: #e0e0e0;
+}
+
+.warning-item i {
+    font-size: 1rem;
+}
+
+/* Emergency Content */
+.emergency-content p {
+    color: #888;
+    margin-bottom: 1rem;
+}
+
+.emergency-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.emergency-content li {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: #e0e0e0;
+    margin-bottom: 0.5rem;
+}
+
+.emergency-content li i {
+    color: #ff00ff;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .url-input-group {
+        flex-direction: column;
+    }
+    
+    .cyber-scan-btn {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .glitch-text {
+        font-size: 1.5rem;
+    }
+    
+    .typing-text {
+        font-size: 0.8rem;
+    }
+    
+    .quick-examples {
+        justify-content: center;
+    }
+    
+    .analysis-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<!-- AOS Animation Script -->
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+<script>
+// Initialize AOS
+AOS.init({
+    duration: 600,
+    once: true
+});
+
+// Set example URL
+function setExample(url) {
+    document.getElementById('urlInput').value = url;
+}
+
+// Form submission animation
+document.addEventListener('DOMContentLoaded', function() {
+    const scanForm = document.getElementById('scanForm');
+    const scanBtn = document.getElementById('scanBtn');
+    
+    if(scanForm) {
+        scanForm.addEventListener('submit', function(e) {
+            const input = document.getElementById('urlInput');
+            if(!input.value) return;
+            
+            scanBtn.innerHTML = '<span class="btn-text">SCANNING...</span>';
+            scanBtn.style.animation = 'btnScanning 1s linear infinite';
+            
+            // Add scanning animation
+            const scanLine = document.createElement('span');
+            scanLine.className = 'btn-scan-active';
+            scanBtn.appendChild(scanLine);
+        });
+    }
+    
+    // Mouse move effect on scan button
+    if(scanBtn) {
+        scanBtn.addEventListener('mousemove', function(e) {
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const moveX = (x - rect.width/2) / 20;
+            const moveY = (y - rect.height/2) / 20;
+            
+            this.style.transform = `perspective(500px) rotateX(${moveY}deg) rotateY(${moveX}deg) scale(1.05)`;
+        });
+        
+        scanBtn.addEventListener('mouseleave', function() {
+            this.style.transform = 'perspective(500px) rotateX(0) rotateY(0) scale(1)';
+        });
+    }
+});
+
+// Add scanning animation style
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes btnScanning {
+        0%, 100% { filter: hue-rotate(0deg); }
+        50% { filter: hue-rotate(90deg); }
+    }
+    
+    .btn-scan-active {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+        animation: btnScanMove 1s linear infinite;
+    }
+    
+    @keyframes btnScanMove {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
